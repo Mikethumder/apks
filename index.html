@@ -2,172 +2,131 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LimpiaGmail Pro</title>
     <style>
-        :root { --primary: #d93025; --success: #0b8043; --bg: #f8f9fa; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: #202124; text-align: center; }
-        
-        .header { background: var(--primary); color: white; padding: 60px 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header h1 { margin: 0; font-size: 1.8rem; }
-        #user-account { margin-top: 10px; font-size: 0.9rem; opacity: 0.9; font-weight: 500; }
-
-        .main-container { padding: 20px; max-width: 500px; margin: 0 auto; }
-        
-        .btn-main { 
-            width: 100%; background: var(--primary); color: white; border: none; 
-            padding: 20px; border-radius: 15px; font-weight: bold; font-size: 1.1rem;
-            cursor: pointer; box-shadow: 0 4px 12px rgba(217, 48, 37, 0.3);
-            transition: all 0.2s ease; margin-bottom: 20px;
-        }
-        .btn-main:active { transform: scale(0.98); opacity: 0.9; }
-        .btn-success { background: var(--success); box-shadow: 0 4px 12px rgba(11, 128, 67, 0.3); }
-
-        #status { margin: 10px 0; font-size: 0.9rem; color: #5f6368; font-weight: 500; }
-
-        /* Tarjetas de correos */
-        .correo-card { 
-            background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; 
-            text-align: left; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--primary); animation: fadeIn 0.3s ease;
-        }
-        .correo-card b { color: #1a73e8; display: block; margin-bottom: 4px; }
-        .correo-card span { font-size: 0.85rem; color: #5f6368; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Spinner */
-        .spinner { 
-            border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; 
-            border-radius: 50%; border-left-color: var(--primary); 
-            animation: spin 1s linear infinite; margin: 20px auto; display: none;
-        }
+        :root { --red: #d93025; --green: #0b8043; }
+        body { font-family: sans-serif; text-align: center; background: #f1f3f4; margin: 0; padding: 20px; }
+        .header { background: var(--red); color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -20px -20px 20px -20px; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 5px solid var(--red); }
+        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-bottom: 10px; color: white; }
+        .btn-connect { background: var(--red); }
+        .btn-scan { background: var(--green); }
+        #status { font-size: 14px; color: #666; margin: 10px 0; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--red); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>LimpiaGmail Pro</h1>
-    <div id="user-account">Estado: Desconectado</div>
-</div>
+    <div class="header">
+        <h1>LimpiaGmail</h1>
+        <div id="user-mail">Desconectado</div>
+    </div>
 
-<div class="main-container">
-    <button class="btn-main" id="btn-accion">CONECTAR MI GMAIL</button>
-    <div id="status">Esperando conexión...</div>
-    <div id="loading" class="spinner"></div>
+    <div id="status">Cargando aplicación...</div>
+    <div id="loader" class="loader"></div>
+    
+    <button id="btn-main" class="btn btn-connect">CONECTAR GMAIL</button>
+    
     <div id="lista"></div>
-</div>
 
-<script>
-    // URL DE TU SCRIPT DE GOOGLE
-    const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+    <script>
+        // --- CONFIGURACIÓN ---
+        const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
-    const btnAccion = document.getElementById('btn-accion');
-    const userAcc = document.getElementById('user-account');
-    const statusTxt = document.getElementById('status');
-    const listaDiv = document.getElementById('lista');
-    const loader = document.getElementById('loading');
+        const btn = document.getElementById('btn-main');
+        const status = document.getElementById('status');
+        const userMail = document.getElementById('user-mail');
+        const listaDiv = document.getElementById('lista');
+        const loader = document.getElementById('loader');
 
-    // 1. LÓGICA AL CARGAR
-    window.onload = function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Si venimos de Google con éxito
-        if (urlParams.get('login') === 'success') {
-            statusTxt.innerText = "¡Autenticación completada!";
-            ejecutarEscaneo();
-        } else {
-            verificarEstadoInicial();
-        }
-    };
-
-    // 2. VERIFICAR SI YA HAY SESIÓN
-    async function verificarEstadoInicial() {
-        try {
-            const res = await fetch(`${API_URL}?action=list&t=${Date.now()}`);
-            const data = await res.json();
-            if (data.email && data.email !== "No identificado") {
-                prepararInterfazLogueado(data.email);
+        // --- 1. DETECTAR ESTADO AL CARGAR ---
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('login') === 'success') {
+                status.innerText = "¡Conexión exitosa!";
+                pedirLista();
+            } else {
+                status.innerText = "Listo para conectar";
             }
-        } catch (e) {
-            console.log("No hay sesión previa detectada.");
+        };
+
+        // --- 2. ACCIÓN DEL BOTÓN PRINCIPAL ---
+        btn.onclick = function() {
+            if (btn.classList.contains('btn-connect')) {
+                // Ir a Google
+                status.innerText = "Redirigiendo...";
+                window.location.href = API_URL;
+            } else {
+                // Escanear si ya está conectado
+                pedirLista();
+            }
+        };
+
+        // --- 3. PEDIR DATOS (JSONP) ---
+        function pedirLista() {
+            loader.style.display = "block";
+            status.innerText = "Buscando correos...";
+            listaDiv.innerHTML = "";
+            
+            const cb = "callback_" + Math.floor(Math.random() * 1000000);
+            window[cb] = function(data) {
+                loader.style.display = "none";
+                if (data.lista) {
+                    renderizar(data);
+                } else {
+                    status.innerText = "Error: " + (data.error || "Sin respuesta");
+                }
+                delete window[cb];
+            };
+
+            const s = document.createElement('script');
+            s.src = API_URL + "?action=list&callback=" + cb + "&t=" + Date.now();
+            document.body.appendChild(s);
         }
-    }
 
-    function prepararInterfazLogueado(email) {
-        userAcc.innerText = "Cuenta: " + email;
-        btnAccion.innerText = "BUSCAR SUSCRIPCIONES";
-        btnAccion.classList.add('btn-success');
-        btnAccion.onclick = ejecutarEscaneo;
-        statusTxt.innerText = "Listo para escanear.";
-    }
+        // --- 4. MOSTRAR CORREOS ---
+        function renderizar(data) {
+            userMail.innerText = data.email;
+            btn.innerText = "ACTUALIZAR LISTA";
+            btn.className = "btn btn-scan";
+            status.innerText = "Encontrados: " + data.lista.length;
 
-    // 3. INICIAR LOGIN (Redirección)
-   btnAccion.onclick = function() {
-    console.log("Botón conectar pulsado");
-    statusTxt.innerText = "Conectando con Google... por favor espera";
-    
-    // Forzamos la apertura en la misma pestaña para evitar bloqueadores de popups
-    try {
-        window.location.assign(API_URL);
-    } catch (e) {
-        // Si falla el método anterior, usamos el estándar
-        window.location.href = API_URL;
-    }
-};
-
-    // 4. ESCANEAR CORREOS
-   function ejecutarEscaneo() {
-    loader.style.display = 'block';
-    listaDiv.innerHTML = '';
-    statusTxt.innerText = "Cargando datos desde Google...";
-    
-    // Creamos un nombre de función temporal
-    const nombreCallback = 'callback_' + Math.floor(Math.random() * 1000000);
-    
-    // Definimos qué hacer cuando lleguen los datos
-    window[nombreCallback] = function(data) {
-        loader.style.display = 'none';
-        if (data.lista) {
-            renderizarLista(data);
-        } else {
-            statusTxt.innerText = "Error: " + (data.error || "No hay datos");
+            let html = "";
+            data.lista.forEach(item => {
+                html += `
+                <div class="card" id="card-${item.id}">
+                    <b>${item.remitente}</b><br>
+                    <small>${item.asunto}</small>
+                    <div style="margin-top:10px;">
+                        <button onclick="ejecutar('${item.id}', 'delete')" style="background:#ea4335; color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">Borrar</button>
+                    </div>
+                </div>`;
+            });
+            listaDiv.innerHTML = html;
         }
-        // Limpiamos el script
-        delete window[nombreCallback];
-    };
 
-    // Creamos el "túnel" de datos
-    const script = document.createElement('script');
-    script.src = `${API_URL}?action=list&callback=${nombreCallback}&t=${Date.now()}`;
-    document.body.appendChild(script);
-}
+        // --- 5. EJECUTAR BORRADO ---
+        function ejecutar(id, accion) {
+            const card = document.getElementById('card-' + id);
+            card.style.opacity = "0.3";
+            
+            const cb = "cb_" + Math.floor(Math.random() * 1000000);
+            window[cb] = function(res) {
+                if (res.status === "ok") {
+                    card.remove();
+                } else {
+                    card.style.opacity = "1";
+                    alert("No se pudo borrar");
+                }
+                delete window[cb];
+            };
 
-function renderizarLista(data) {
-    userAcc.innerText = "Cuenta: " + data.email;
-    btnAccion.innerText = "RESCANEAR";
-    btnAccion.classList.add('btn-success');
-    
-    if (data.lista.length === 0) {
-        statusTxt.innerText = "No se encontraron suscripciones.";
-        return;
-    }
-
-    let html = "";
-    data.lista.forEach(item => {
-        html += `
-            <div class="correo-card" id="card-${item.id}">
-        <div onclick="verCorreo('${item.id}')" style="cursor:pointer">
-            <span style="font-size:10px; background:#eee; padding:2px 5px; border-radius:4px; color:#666; float:right;">${item.tipo}</span>
-            <b>${item.remitente}</b>
-            <span>${item.asunto}</span>
-        </div>
-    });
-    listaDiv.innerHTML = html;
-    statusTxt.innerText = `Éxito: ${data.lista.length} correos detectados.`;
-}
-</script>
-
+            const s = document.createElement('script');
+            s.src = API_URL + "?action=" + accion + "&id=" + id + "&callback=" + cb;
+            document.body.appendChild(s);
+        }
+    </script>
 </body>
 </html>
