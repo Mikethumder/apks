@@ -2,35 +2,46 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>LimpiaGmail Test</title>
+    <title>LimpiaGmail Pro</title>
+    <style>
+        body { text-align: center; font-family: sans-serif; background: #f0f2f5; padding-top: 100px; margin: 0; }
+        .btn {
+            background: #d93025;
+            color: white;
+            padding: 25px 50px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            /* Esto obliga al botón a estar por encima de todo */
+            position: relative;
+            z-index: 9999; 
+        }
+        .btn:hover { background: #b31412; }
+    </style>
 </head>
-<body style="text-align: center; padding-top: 100px; font-family: Arial; background: #eee;">
-
+<body>
     <h1>LimpiaGmail Pro</h1>
-    <p id="info">Estado: Esperando clic</p>
-
-    <button id="boton" 
-            onclick="conectar()" 
-            style="background: #d93025; color: white; padding: 25px 50px; font-size: 20px; font-weight: bold; border: none; border-radius: 15px; cursor: pointer !important; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: inline-block;">
-        CONECTAR AHORA
-    </button>
+    <p id="msg">Pulsa el botón para empezar</p>
+    
+    <button class="btn" onclick="conectar()">CONECTAR MI GMAIL</button>
 
     <script>
-        // TU URL DE GOOGLE
-        var urlGoogle = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+        var URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
         function conectar() {
-            alert("¡Botón pulsado correctamente!"); // Esto nos dirá si el JS vive
-            var win = window.open(urlGoogle, "_blank");
+            var win = window.open(URL_SCRIPT, "_blank");
+            document.getElementById('msg').innerText = "Esperando autorización...";
             
-            var t = setInterval(function() {
+            var timer = setInterval(function() {
                 if (!win || win.closed) {
-                    clearInterval(t);
+                    clearInterval(timer);
                     location.reload();
                 }
             }, 1000);
         }
     </script>
-
 </body>
 </html>
