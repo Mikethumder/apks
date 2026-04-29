@@ -138,14 +138,17 @@ function pedirLista() {
 function verTodos(email) {
     if(!email) return;
     
-    // El formato más simple es el más efectivo
-    const query = "from:" + email;
+    // Limpiamos el email por si acaso tiene espacios
+    const cleanEmail = email.trim();
     
-    // Esta URL funciona en PC y "despierta" el buscador en el móvil
+    // Construimos la query: from:news@contact.burgerking.es
+    const query = "from:" + cleanEmail;
+    
+    // URL LIMPIA: Sin #inbox al final para que no se resetee la búsqueda
     const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query);
 
-    // Si es móvil, usamos la misma ventana para forzar a la App a abrirse
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // En móvil usamos location.href para "empujar" a la App de Gmail
         window.location.href = url;
     } else {
         // En PC, abrimos en pestaña nueva
