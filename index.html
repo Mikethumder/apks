@@ -149,10 +149,12 @@ function renderizarLista(data) {
     let html = "";
     data.lista.forEach(item => {
         html += `
-            <div class="correo-card">
-                <b>${item.remitente}</b>
-                <span>${item.asunto}</span>
-            </div>`;
+            <div class="correo-card" id="card-${item.id}">
+        <div onclick="verCorreo('${item.id}')" style="cursor:pointer">
+            <span style="font-size:10px; background:#eee; padding:2px 5px; border-radius:4px; color:#666; float:right;">${item.tipo}</span>
+            <b>${item.remitente}</b>
+            <span>${item.asunto}</span>
+        </div>
     });
     listaDiv.innerHTML = html;
     statusTxt.innerText = `Éxito: ${data.lista.length} correos detectados.`;
