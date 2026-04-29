@@ -9,7 +9,23 @@
         body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: #3c4043; }
         
         /* Cabecera */
-        .header { background: var(--primary); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .header { 
+    background: var(--primary); 
+    color: white; 
+    padding: 45px 15px 15px 15px; /* Aumentamos el padding superior de 15px a 45px */
+    text-align: center; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+}
+
+/* Añade esto para que el Notch no moleste en ningún móvil */
+@supports (padding-top: env(safe-area-inset-top)) {
+    .header {
+        padding-top: calc(env(safe-area-inset-top) + 15px);
+    }
+}
         .header h2 { margin: 0; font-size: 1.2rem; }
         
         /* Selector y Botones principales */
