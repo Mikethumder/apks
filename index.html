@@ -66,12 +66,28 @@
         const guia = document.getElementById('guia-container');
 
         // 1. CARGA INICIAL
-        window.onload = function() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('login') === 'success' || window.location.hash === '#success') {
-                pedirLista();
-            }
-        };
+       window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    // Si la URL tiene ?login=success O si el botón dice "Detectando sesión"
+    if (params.get('login') === 'success') {
+        pedirLista(); 
+    } else {
+        // Intentamos una carga rápida para ver si ya hay sesión
+        verificarSesionSilenciosa();
+    }
+};
+
+async function verificarSesionSilenciosa() {
+    // Si en 2 segundos Google no responde, dejamos el botón de conectar
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    
+    try {
+        pedirLista(); // Intentamos cargar directamente
+    } catch(e) {
+        btn.style.display = 'block';
+    }
+}
 
         // 2. BOTÓN PRINCIPAL
         btn.onclick = function() {
