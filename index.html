@@ -71,25 +71,70 @@ const guia = document.getElementById('guia-container');
 window.onload = function() {
     const params = new URLSearchParams(window.location.search);
     const dataParam = params.get('data');
+    const loginParam = params.get('login');
 
+    // CASO A: Google nos ha enviado los datos de la lista
     if (dataParam) {
-        // Reconstruimos la lista desde el formato corto [id, nombre, email, conteo]
-        const raw = JSON.parse(atob(dataParam.replace(/-/g, '+').replace(/_/g, '/')));
-        const listaFormateada = raw.map(item => ({
-            id: item[0],
-            remitente: item[1],
-            email: item[2],
-            asunto: "Correos antiguos",
-            conteo: item[3]
-        }));
-        
-        renderizar({lista: listaFormateada, email: "Cuenta Vinculada"});
-        
-        // Limpiamos la URL para que no quede el "churro" de letras
-        window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (params.get('login') === 'success') {
-        window.location.href = API_URL + "?action=list";
+        status.innerText = "Procesando lista recibida...";
+        try {
+            // Decodificamos el Base64 "seguro para web"
+            const base64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');
+            const raw = JSON.parse(atob(base64));
+            
+            // Reconstruimos la lista [id, nombre, email, conteo]
+            const listaFormateada = raw.map(item => ({
+                id: item[0],
+                remitente: item[1],
+                email: item[2],
+                asunto: "Correos de +1 año",
+                conteo: item[3]
+            }));
+            
+            renderizar({lista: listaFormateada, email: "Cuenta Conectada"});
+            // Limpiamos la URL para que quede bonita
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {
+            console.error(e);
+            status.innerText = "Error al procesar datos. Reintenta conectar.";
+            btn.style.display = 'block';
+        }
+        return;
     }
+
+    // CASO B: Venimos de autorizar a Google, pero aún no tenemos la lista
+    if (loginParam === 'success') {
+        status.innerText = "Obteniendo correos... (Espera 5s)";
+        // Redirigimos a la acción de listado en Google
+        window.location.href = API_URL + "?action=list";
+    } else {
+        // CASO C: Estado inicial (reposo)
+        btn.style.display = 'block';
+        status.innerText = "Listo para empezar.";
+    }
+};
+
+// El botón ahora solo hace una cosa: Ir a Google
+btn.onclick = function() {
+    status.innerText = "Conectando con Google...";
+    window.location.href = API_URL; 
+};
+
+    // CASO B: Venimos de autorizar a Google, pero aún no tenemos la lista
+    if (loginParam === 'success') {
+        status.innerText = "Obteniendo correos... (Espera 5s)";
+        // Redirigimos a la acción de listado en Google
+        window.location.href = API_URL + "?action=list";
+    } else {
+        // CASO C: Estado inicial (reposo)
+        btn.style.display = 'block';
+        status.innerText = "Listo para empezar.";
+    }
+};
+
+// El botón ahora solo hace una cosa: Ir a Google
+btn.onclick = function() {
+    status.innerText = "Conectando con Google...";
+    window.location.href = API_URL; 
 };
 
 // --- 2. BOTÓN CONECTAR / REFRESCAR ---
