@@ -138,18 +138,18 @@ function pedirLista() {
 function verTodos(email) {
     if(!email) return;
     
-    const query = "from:" + email;
+    // El secreto es usar 'search' como vista principal
+    const query = encodeURIComponent("from:" + email);
     
-    // Esta estructura de URL es la más robusta para que la App de Gmail 
-    // en móviles (iOS/Android) capture la búsqueda correctamente.
-    const urlBusqueda = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query) + "#search/" + encodeURIComponent(query);
-    
-    // En móviles, abrir en la misma pestaña ayuda a que el Sistema Operativo 
-    // detecte el enlace y lo abra directamente en la App de Gmail.
+    // Esta URL es la más potente para forzar el filtro en móviles:
+    const url = "https://mail.google.com/mail/u/0/?view=tl&search=query&q=" + query;
+
+    // En móviles, forzamos la misma pestaña para que el Sistema Operativo 
+    // decida abrir la App de Gmail en lugar del navegador.
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        window.location.href = urlBusqueda;
+        window.location.href = url;
     } else {
-        window.open(urlBusqueda, '_blank');
+        window.open(url, '_blank');
     }
 }
 
