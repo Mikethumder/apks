@@ -97,10 +97,11 @@
      function renderizar(data) {
     userMail.innerText = data.email;
     
-    // CORRECCIÓN BOTÓN: Forzamos que el botón sea de "Refrescar"
-    btn.innerText = "REFRESCAR LISTA";
-    btn.className = "btn btn-scan"; 
-    btn.onclick = pedirLista; // Reasignamos la función de carga
+    // 1. CAMBIO DE BOTÓN: Ocultamos el de conectar y mostramos el de refrescar correctamente
+    const btnMain = document.getElementById('btn-main');
+    btnMain.innerText = "REFRESCAR LISTA";
+    btnMain.style.background = "#0b8043"; // Cambia a verde
+    btnMain.onclick = pedirLista; // Ahora el botón sirve para refrescar
 
     status.innerText = "Remitentes históricos detectados: " + data.lista.length;
 
@@ -135,6 +136,12 @@
         </div>`;
     });
     listaDiv.innerHTML = html;
+}
+
+// Función que abre TODOS los correos de ese remitente en Gmail
+function verTodos(email) {
+    const searchUrl = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
+    window.open(searchUrl, '_blank');
 }
 
 // Nueva función para ver el listado completo filtrado por email
