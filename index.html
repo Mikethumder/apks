@@ -186,11 +186,8 @@ function ejecutarBorradoMasivo(id, email) {
 
 function verTodos(email) {
     if(!email) return;
-    
-    // Esta es la URL que Gmail usa internamente para sus búsquedas. 
-    // Es la más fiable para listar "absolutamente todo" lo de un remitente.
+    // La URL de búsqueda más infalible de Gmail
     const url = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
-    
     window.open(url, '_blank');
 }
     </script>
