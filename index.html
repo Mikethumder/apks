@@ -91,22 +91,46 @@ function pedirLista() {
     btn.style.display = 'none';
     if(guia) guia.style.display = 'none';
     loader.style.display = "block";
-    status.innerText = "Cargando tus correos...";
+    status.innerText = "Conectando con Google... (Paso 1/2)";
 
-    const cb = "cb" + Date.now();
-    window[cb] = function(data) {
+    const cbName = "cb" + Date.now();
+    
+    // Configurar un tiempo de espera (Timeout)
+    const timeout = setTimeout(() => {
+        if (window[cbName]) {
+            loader.style.display = "none";
+            btn.style.display = 'block';
+            status.innerHTML = "<b style='color:red;'>Google no responde.</b><br>Prueba a 'Refrescar Lista' o revisa si tienes muchos correos.";
+            delete window[cbName];
+        }
+    }, 20000); // 20 segundos de margen
+
+    window[cbName] = function(data) {
+        clearTimeout(timeout); // Detener el reloj de error
         loader.style.display = "none";
         btn.style.display = 'block';
-        if (data.lista) {
+        
+        if (data && data.lista) {
+            status.innerText = "¡Lista recibida!";
             renderizar(data);
         } else {
-            status.innerText = "Error al recibir datos.";
+            status.innerText = "Google respondió vacío. Reintenta.";
         }
-        delete window[cb];
+        delete window[cbName];
     };
 
     const s = document.createElement('script');
-    s.src = `${API_URL}?action=list&callback=${cb}`;
+    // Forzamos a que no use caché con Math.random()
+    s.src = `${API_URL}?action=list&callback=${cbName}&v=${Math.random()}`;
+    
+    // Si hay un error de carga del script (bloqueo de red)
+    s.onerror = function() {
+        clearTimeout(timeout);
+        loader.style.display = "none";
+        btn.style.display = 'block';
+        status.innerText = "Error de red: El navegador bloqueó la conexión.";
+    };
+    
     document.body.appendChild(s);
 }
 
