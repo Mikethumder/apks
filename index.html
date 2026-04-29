@@ -190,6 +190,53 @@ function verTodos(email) {
     const url = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
     window.open(url, '_blank');
 }
+        
+function ejecutar(id, accion) {
+    let borrarTambien = false;
+
+    if (accion === 'unsubscribe') {
+        const respuesta = confirm(
+            "SOLICITUD DE BAJA\n\n" +
+            "¿Quieres también BORRAR todos los correos de este remitente?\n\n" +
+            "• ACEPTAR: Tramitar baja + Borrar todo.\n" +
+            "• CANCELAR: Tramitar baja + Dejar correos en la bandeja."
+        );
+        if (respuesta) borrarTambien = true;
+    }
+
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = "0.3";
+    card.style.pointerEvents = "none";
+    
+    const cb = "cb_" + Math.floor(Math.random() * 1000000);
+    window[cb] = function(res) {
+        if (res.status === "ok") {
+            card.style.transition = "all 0.5s ease";
+            // Si solo fue baja sin borrar, quizás prefieras que la tarjeta NO desaparezca, 
+            // pero lo ideal es que se vaya de la lista de "pendientes" para no repetir.
+            card.style.transform = "scale(0.9)";
+            card.style.opacity = "0";
+            setTimeout(() => card.remove(), 500);
+        } else {
+            card.style.opacity = "1";
+            card.style.pointerEvents = "all";
+            alert("Error en el proceso.");
+        }
+        delete window[cb];
+    };
+
+    const s = document.createElement('script');
+    let url = `${API_URL}?action=${accion}&id=${id}&callback=${cb}&t=${Date.now()}`;
+    
+    if (borrarTambien) {
+        // Buscamos el email dentro del botón de Ver que ya lo tiene
+        const email = card.querySelector('.btn-ver').getAttribute('onclick').match(/'([^']+)'/)[1];
+        url += `&extra=delete&email=${encodeURIComponent(email)}`;
+    }
+    
+    s.src = url;
+    document.body.appendChild(s);
+}
     </script>
 </body>
 </html>
