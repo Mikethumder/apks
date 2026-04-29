@@ -133,47 +133,49 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
     
-    let datosLocales = [];
-    let idTemporal = "";
+   let datosLocales = [];
 
-   async function escanear() {
-    const btn = document.getElementById('btn-scan');
-    const loader = document.getElementById('loading-overlay');
-    
-    // 1. Intentamos la conexión rápida
-    btn.disabled = true;
-    loader.style.display = 'block';
+    // Al iniciar, no hacemos fetch automático (evita el bucle de error)
+    window.onload = () => {
+        document.getElementById('user-account').innerText = "Estado: Esperando conexión";
+        document.getElementById('btn-scan').innerText = "CONECTAR Y BUSCAR";
+    };
 
-    try {
-        const res = await fetch(`${API_URL}?action=list`);
+    async function escanear() {
+        const btn = document.getElementById('btn-scan');
+        const loader = document.getElementById('loading-overlay');
         
-        // Si hay error de permisos (CORS), saltará al 'catch'
-        const data = await res.json();
-        
-        document.getElementById('user-account').innerText = "Cuenta: " + data.email;
-        datosLocales = data.lista || [];
-        renderizarLista();
-        
-    } catch (e) {
-        // 2. Si falla por falta de login, abrimos la ventana
-        // Ponemos un mensaje claro antes del aviso de Chrome
-        if(confirm("Para ver TUS correos, Google necesita tu permiso. ¿Quieres conectar tu cuenta ahora?")) {
-            const authWindow = window.open(API_URL, '_blank');
+        btn.disabled = true;
+        loader.style.display = 'block';
+
+        try {
+            const res = await fetch(`${API_URL}?action=list`);
             
-            // Esperamos a que el usuario cierre la ventana para re-intentar
-            const timer = setInterval(() => {
-                if (authWindow && authWindow.closed) {
-                    clearInterval(timer);
-                    escanear(); 
-                }
-            }, 1000);
-        }
-    } finally {
-        loader.style.display = 'none';
-        btn.disabled = false;
-    }
-}
+            // Si la respuesta no es JSON o falla (Google nos bloquea)
+            if (!res.ok) throw new Error("Auth");
 
+            const data = await res.json();
+            document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+            datosLocales = data.lista || [];
+            renderizarLista();
+            btn.innerText = "ACTUALIZAR LISTA";
+            
+        } catch (e) {
+            // Si falla, es que el usuario necesita identificarse en una ventana real
+            if(confirm("Google necesita que autorices el acceso a tus correos. ¿Abrir ventana de conexión?")) {
+                const authWin = window.open(API_URL, '_blank');
+                const timer = setInterval(() => {
+                    if (authWin.closed) {
+                        clearInterval(timer);
+                        location.reload(); // Recarga la app para intentar de nuevo con sesión
+                    }
+                }, 1000);
+            }
+        } finally {
+            loader.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
     function renderizarLista() {
         const contenedor = document.getElementById('lista');
         if (datosLocales.length === 0) {
