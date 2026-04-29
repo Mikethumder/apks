@@ -83,30 +83,63 @@
         };
 
         // 3. CARGAR LISTA (JSONP)
-        function pedirLista() {
-            btn.style.display = 'none';
-            guia.style.display = 'none';
-            loader.style.display = "block";
-            status.innerText = "Buscando correos históricos de +1 año...";
-            listaDiv.innerHTML = "";
-            
-            const cb = "callback_" + Math.floor(Math.random() * 1000000);
-            window[cb] = function(data) {
-                loader.style.display = "none";
-                btn.style.display = 'block';
-                if (data.lista) {
-                    renderizar(data);
-                } else {
-                    status.innerText = "Error: " + (data.error || "No hay respuesta");
-                    btn.innerText = "REINTENTAR CONEXIÓN";
-                }
-                delete window[cb];
-            };
-
-            const s = document.createElement('script');
-            s.src = `${API_URL}?action=list&callback=${cb}&t=${Date.now()}`;
-            document.body.appendChild(s);
+       // MODIFICACIÓN: Esta función ahora oculta TODO antes de buscar
+function pedirLista() {
+    // 1. Ocultar botones y guía de inmediato
+    btn.style.display = 'none';
+    if(guia) guia.style.display = 'none';
+    
+    // 2. Mostrar loader y estado
+    loader.style.display = "block";
+    status.innerText = "Limpiando vista y conectando con Gmail...";
+    listaDiv.innerHTML = "";
+    
+    const cb = "callback_" + Math.floor(Math.random() * 1000000);
+    window[cb] = function(data) {
+        loader.style.display = "none";
+        // Solo mostramos el botón cuando los datos ya están dibujados
+        if (data.lista) {
+            renderizar(data);
+            btn.style.display = 'block'; 
+        } else {
+            status.innerText = "Error de conexión. Reintenta.";
+            btn.style.display = 'block';
+            btn.innerText = "REINTENTAR";
         }
+        delete window[cb];
+    };
+
+    const s = document.createElement('script');
+    s.src = `${API_URL}?action=list&callback=${cb}&t=${Date.now()}`;
+    document.body.appendChild(s);
+}
+
+// MODIFICACIÓN: Forzamos el borrado real
+function ejecutar(id, accion) {
+    const card = document.getElementById('card-' + id);
+    card.style.background = "#fff0f0"; // Cambio de color para indicar que se está borrando
+    card.style.pointerEvents = "none"; // Evitar doble clic
+    
+    const cb = "cb_" + Math.floor(Math.random() * 1000000);
+    window[cb] = function(res) {
+        if (res.status === "ok") {
+            // Animación y eliminación
+            card.style.transition = "all 0.5s ease-out";
+            card.style.transform = "translateX(150%)";
+            setTimeout(() => card.remove(), 500);
+        } else {
+            alert("Google no pudo borrar esto. Verifica tus permisos en el Script.");
+            card.style.background = "white";
+            card.style.pointerEvents = "all";
+        }
+        delete window[cb];
+    };
+
+    const s = document.createElement('script');
+    // Enviamos el ID con un timestamp para romper cualquier caché intermedio
+    s.src = `${API_URL}?action=${accion}&id=${id}&callback=${cb}&cacheburst=${Date.now()}`;
+    document.body.appendChild(s);
+}
 
         // 4. DIBUJAR BLOQUES
         function renderizar(data) {
