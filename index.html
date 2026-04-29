@@ -94,31 +94,32 @@
         }
 
         // --- 4. MOSTRAR CORREOS ---
-      function renderizar(data) {
+     function renderizar(data) {
     userMail.innerText = data.email;
+    
+    // CORRECCIÓN BOTÓN: Forzamos que el botón sea de "Refrescar"
     btn.innerText = "REFRESCAR LISTA";
-    btn.className = "btn btn-scan";
-    status.innerText = "Remitentes detectados: " + data.lista.length;
+    btn.className = "btn btn-scan"; 
+    btn.onclick = pedirLista; // Reasignamos la función de carga
+
+    status.innerText = "Remitentes históricos detectados: " + data.lista.length;
 
     let html = "";
     data.lista.forEach(item => {
         html += `
-        <div class="card" id="card-${item.id}" style="border-left: 8px solid ${item.tipo === 'SPAM' ? '#555' : '#d93025'}; padding: 20px; margin-bottom: 15px;">
+        <div class="card" id="card-${item.id}" style="border-left: 8px solid #d93025; padding: 20px; margin-bottom: 15px;">
             <div style="text-align: left; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between;">
-                    <b style="font-size: 1.2rem; color: #1a73e8;">${item.remitente}</b>
-                    <span style="font-size: 10px; color: white; background: #555; padding: 2px 6px; border-radius: 4px;">${item.tipo}</span>
-                </div>
+                <b style="font-size: 1.2rem; color: #1a73e8;">${item.remitente}</b>
                 <div style="color: #666; font-size: 0.9rem; margin: 5px 0;">${item.asunto}</div>
-                <div style="display: inline-block; background: #feefee; color: #d93025; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-top: 5px;">
-                    ${item.conteo} correos de este sitio
+                <div style="display: inline-block; background: #feefee; color: #d93025; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: bold;">
+                    ${item.conteo} correos acumulados
                 </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                <button onclick="ver('${item.id}')" 
+                <button onclick="verTodos('${item.email}')" 
                     style="background:#fff; color:#3c4043; border:1px solid #dadce0; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
-                    Ver
+                    Ver (${item.conteo})
                 </button>
                 
                 <button onclick="ejecutar('${item.id}', 'delete')" 
@@ -136,6 +137,11 @@
     listaDiv.innerHTML = html;
 }
 
+// Nueva función para ver el listado completo filtrado por email
+function verTodos(email) {
+    // Abre Gmail con la búsqueda "from:correo@ejemplo.com"
+    window.open(`https://mail.google.com/mail/u/0/#search/from%3A${encodeURIComponent(email)}`, '_blank');
+}
 // Función para ver el correo (abre en pestaña nueva)
 function ver(id) {
     window.open("https://mail.google.com/mail/u/0/#inbox/" + id, "_blank");
