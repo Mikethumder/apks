@@ -70,105 +70,50 @@ const guia = document.getElementById('guia-container');
 // --- 1. DETECCIÓN AUTOMÁTICA AL CARGAR ---
 window.onload = function() {
     const params = new URLSearchParams(window.location.search);
-    const dataParam = params.get('data');
-    const loginParam = params.get('login');
-
-    // CASO A: Google nos ha enviado los datos de la lista
-    if (dataParam) {
-        status.innerText = "Procesando lista recibida...";
-        try {
-            // Decodificamos el Base64 "seguro para web"
-            const base64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');
-            const raw = JSON.parse(atob(base64));
-            
-            // Reconstruimos la lista [id, nombre, email, conteo]
-            const listaFormateada = raw.map(item => ({
-                id: item[0],
-                remitente: item[1],
-                email: item[2],
-                asunto: "Correos de +1 año",
-                conteo: item[3]
-            }));
-            
-            renderizar({lista: listaFormateada, email: "Cuenta Conectada"});
-            // Limpiamos la URL para que quede bonita
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {
-            console.error(e);
-            status.innerText = "Error al procesar datos. Reintenta conectar.";
-            btn.style.display = 'block';
-        }
-        return;
-    }
-
-    // CASO B: Venimos de autorizar a Google, pero aún no tenemos la lista
-    if (loginParam === 'success') {
-        status.innerText = "Obteniendo correos... (Espera 5s)";
-        // Redirigimos a la acción de listado en Google
-        window.location.href = API_URL + "?action=list";
+    // Si volvemos de Google, lanzamos la petición de lista de inmediato
+    if (params.get('login') === 'success') {
+        pedirLista();
     } else {
-        // CASO C: Estado inicial (reposo)
         btn.style.display = 'block';
-        status.innerText = "Listo para empezar.";
     }
 };
 
-// El botón ahora solo hace una cosa: Ir a Google
+// BOTÓN CONECTAR
 btn.onclick = function() {
-    status.innerText = "Conectando con Google...";
-    window.location.href = API_URL; 
-};
-
-    // CASO B: Venimos de autorizar a Google, pero aún no tenemos la lista
-    if (loginParam === 'success') {
-        status.innerText = "Obteniendo correos... (Espera 5s)";
-        // Redirigimos a la acción de listado en Google
-        window.location.href = API_URL + "?action=list";
-    } else {
-        // CASO C: Estado inicial (reposo)
-        btn.style.display = 'block';
-        status.innerText = "Listo para empezar.";
-    }
-};
-
-// El botón ahora solo hace una cosa: Ir a Google
-btn.onclick = function() {
-    status.innerText = "Conectando con Google...";
-    window.location.href = API_URL; 
-};
-
-// --- 2. BOTÓN CONECTAR / REFRESCAR ---
-btn.onclick = function() {
-    if (btn.classList.contains('btn-connect')) {
-        status.innerText = "Redirigiendo a Google...";
+    if (btn.innerText.includes("CONECTAR")) {
         window.location.href = API_URL;
     } else {
         pedirLista();
     }
 };
 
-// --- 3. PEDIR LISTA (JSONP) ---
 function pedirLista() {
     btn.style.display = 'none';
     if(guia) guia.style.display = 'none';
     loader.style.display = "block";
-    status.innerText = "Buscando correos de +1 año... (espera 10s)";
-    
-    const cb = "callback_" + Math.floor(Math.random() * 1000000);
+    status.innerText = "Cargando tus correos...";
+
+    const cb = "cb" + Date.now();
     window[cb] = function(data) {
         loader.style.display = "none";
         btn.style.display = 'block';
         if (data.lista) {
             renderizar(data);
         } else {
-            status.innerText = "Error: " + (data.error || "Sin respuesta");
+            status.innerText = "Error al recibir datos.";
         }
         delete window[cb];
     };
 
     const s = document.createElement('script');
-    s.src = `${API_URL}?action=list&callback=${cb}&t=${Date.now()}`;
+    s.src = `${API_URL}?action=list&callback=${cb}`;
     document.body.appendChild(s);
+}
+
+// FUNCIÓN VER (Simplificada para móvil)
+function verTodos(email) {
+    const url = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
+    window.open(url, '_blank');
 }
 
 // --- 4. RENDERIZAR BLOQUES ---
