@@ -185,27 +185,16 @@ function ejecutarBorradoMasivo(id, email) {
 }
 
 function verTodos(email) {
-    if(!email) return alert("Email no disponible");
+    if(!email) return;
     
     const query = "from:" + email;
     const encodedQuery = encodeURIComponent(query);
     
-    // Detectamos si es móvil
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // Esta URL es un "Deep Link" que suele forzar la apertura de la App
+    // o de la versión móvil moderna con búsqueda.
+    const url = "https://mail.google.com/mail/u/0/?view=tl&search=query&q=" + encodedQuery + "&t=" + Date.now();
     
-    let url;
-    if (isMobile) {
-        // Esta URL fuerza a la interfaz moderna de Gmail a ejecutar la búsqueda
-        // Evita que caiga en la versión /mu/mp/ que me pasaste
-        url = "https://mail.google.com/mail/u/0/x/?&v=b&s=q&q=" + encodedQuery;
-        
-        // Intento secundario si el primero te sigue mandando a la versión básica:
-        // url = "https://mail.google.com/mail/u/0/?search=query&view=tl&q=" + encodedQuery;
-    } else {
-        // Versión estándar para PC
-        url = "https://mail.google.com/mail/u/0/#search/" + encodedQuery;
-    }
-    
+    // Forzamos la apertura en la misma pestaña para que el móvil lo detecte como una acción del sistema
     window.location.href = url;
 }
         
