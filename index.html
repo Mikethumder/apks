@@ -183,20 +183,13 @@ function ejecutarBorradoMasivo(id, email) {
 }
 
 function verTodos(email) {
-    if(!email) return alert("Email no disponible");
+    if(!email) return;
     
-    // Usamos la URL de búsqueda avanzada (parámetro 'q')
-    // Esta URL fuerza a Gmail a ejecutar la búsqueda en cuanto carga
-    const url = "https://mail.google.com/mail/u/0/?shva=1#search/from%3A" + encodeURIComponent(email);
+    // Esta es la URL que Gmail usa internamente para sus búsquedas. 
+    // Es la más fiable para listar "absolutamente todo" lo de un remitente.
+    const url = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
     
-    // Intento 2 (Si el anterior falla en algunos móviles):
-    // const url = "https://mail.google.com/mail/u/0/#search/from:" + email;
-
-    const win = window.open(url, '_blank');
-    
-    if (!win) {
-        alert("Por favor, permite las ventanas emergentes.");
-    }
+    window.open(url, '_blank');
 }
     </script>
 </body>
