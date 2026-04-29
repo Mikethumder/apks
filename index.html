@@ -1,66 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>LimpiaGmail</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LimpiaGmail Pro</title>
     <style>
-        body { text-align: center; font-family: sans-serif; padding-top: 50px; background: #f0f0f0; }
-        /* Forzamos el cursor para confirmar que el botón es clickable */
-        .boton { 
-            background: #d93025; 
-            color: white; 
-            padding: 20px 40px; 
-            border-radius: 10px; 
-            font-weight: bold; 
-            border: none; 
-            cursor: pointer !important; 
-            font-size: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        /* Estilos ultra-básicos para asegurar visibilidad */
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #f0f2f5; 
+            padding-top: 50px;
+            margin: 0;
         }
-        .boton:hover { background: #b31412; }
+        .header {
+            background-color: #d93025;
+            color: white;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        /* Forzamos que el botón sea reactivo al ratón */
+        #btn-conectar {
+            background-color: #d93025;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: inline-block;
+            text-decoration: none;
+            -webkit-appearance: none;
+        }
+        #btn-conectar:hover {
+            background-color: #b31412;
+            transform: translateY(-2px);
+        }
+        #btn-conectar:active {
+            transform: translateY(1px);
+        }
+        .status-box {
+            margin-top: 20px;
+            color: #555;
+        }
     </style>
 </head>
 <body>
 
-    <h2>LimpiaGmail Pro</h2>
-    <p id="status">Estado: Cargando...</p>
-    
-    <button class="boton" onclick="conectar()">CONECTAR MI GMAIL</button>
+    <div class="header">
+        <h1>LimpiaGmail</h1>
+    </div>
+
+    <button id="btn-conectar" onclick="abrirGoogle()">
+        CONECTAR MI GMAIL
+    </button>
+
+    <div class="status-box">
+        <p id="msg">Estado: Esperando acción</p>
+    </div>
 
     <script>
-        // LA URL DE TU SCRIPT
-        var URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+        // TU URL EXACTA
+        var miUrl = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
-        function conectar() {
-            console.log("Clic detectado");
-            // 1. Abrir la ventana de Google
-            var win = window.open(URL, "_blank", "width=500,height=600");
+        function abrirGoogle() {
+            console.log("Intentando abrir ventana...");
+            document.getElementById('msg').innerText = "Abriendo ventana de Google...";
             
-            // 2. Avisar al usuario
-            document.getElementById('status').innerText = "Estado: Esperando autorización...";
+            // Abrimos en una pestaña nueva para evitar bloqueos de pop-ups pequeños
+            var win = window.open(miUrl, "_blank");
 
-            // 3. Vigilar el cierre
+            // Vigilamos si se cierra
             var timer = setInterval(function() {
                 if (!win || win.closed) {
                     clearInterval(timer);
-                    location.reload();
+                    document.getElementById('msg').innerText = "Ventana cerrada. Recargando...";
+                    // Recargamos la web entera para ver si ya detecta la sesión
+                    setTimeout(function(){
+                        location.reload();
+                    }, 1000);
                 }
             }, 1000);
         }
-
-        // Comprobar estado al entrar (versión compatible antigua)
-        fetch(URL + "?action=list")
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.email) {
-                    document.getElementById('status').innerText = "Conectado: " + data.email;
-                } else {
-                    document.getElementById('status').innerText = "Estado: Desconectado";
-                }
-            })
-            .catch(function() {
-                document.getElementById('status').innerText = "Estado: Listo para conectar";
-            });
     </script>
 </body>
 </html>
