@@ -104,10 +104,18 @@
     }
 
     // 3. INICIAR LOGIN (Redirección)
-    btnAccion.onclick = function() {
-        statusTxt.innerText = "Redirigiendo a Google...";
+   btnAccion.onclick = function() {
+    console.log("Botón conectar pulsado");
+    statusTxt.innerText = "Conectando con Google... por favor espera";
+    
+    // Forzamos la apertura en la misma pestaña para evitar bloqueadores de popups
+    try {
+        window.location.assign(API_URL);
+    } catch (e) {
+        // Si falla el método anterior, usamos el estándar
         window.location.href = API_URL;
-    };
+    }
+};
 
     // 4. ESCANEAR CORREOS
    function ejecutarEscaneo() {
