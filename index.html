@@ -138,20 +138,22 @@ function pedirLista() {
 function verTodos(email) {
     if(!email) return;
     
-    // Limpiamos el email por si acaso tiene espacios
+    // 1. Limpiamos espacios en blanco
     const cleanEmail = email.trim();
     
-    // Construimos la query: from:news@contact.burgerking.es
+    // 2. Construimos la búsqueda limpia: from:ejemplo@dominio.com
     const query = "from:" + cleanEmail;
     
-    // URL LIMPIA: Sin #inbox al final para que no se resetee la búsqueda
+    // 3. URL SIN EL #INBOX AL FINAL
+    // Usamos 'search' en la ruta para forzar a Gmail a entrar en modo búsqueda
     const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query);
 
+    // 4. Manejo inteligente PC vs MÓVIL
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // En móvil usamos location.href para "empujar" a la App de Gmail
+        // En móvil, location.href ayuda a que el sistema "empuje" la búsqueda a la App
         window.location.href = url;
     } else {
-        // En PC, abrimos en pestaña nueva
+        // En PC, abrimos en pestaña nueva sin interferir con la actual
         window.open(url, '_blank');
     }
 }
