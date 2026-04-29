@@ -70,20 +70,25 @@ const guia = document.getElementById('guia-container');
 // --- 1. DETECCIÓN AUTOMÁTICA AL CARGAR ---
 window.onload = function() {
     const params = new URLSearchParams(window.location.search);
-    
-    // 1. Si venimos con datos en la URL (Solución Incógnito)
-    if (params.get('data')) {
-        const datosRaw = decodeURIComponent(params.get('data'));
-        const lista = JSON.parse(atob(datosRaw));
-        renderizar({lista: lista, email: "Conectado"});
-        return;
-    }
+    const dataParam = params.get('data');
 
-    // 2. Si venimos de login exitoso, pedimos la lista por redirección
-    if (params.get('login') === 'success') {
-        window.location.href = API_URL + "?action=list"; // Redirigimos a Google para que nos devuelva la data
-    } else {
-        btn.style.display = 'block';
+    if (dataParam) {
+        // Reconstruimos la lista desde el formato corto [id, nombre, email, conteo]
+        const raw = JSON.parse(atob(dataParam.replace(/-/g, '+').replace(/_/g, '/')));
+        const listaFormateada = raw.map(item => ({
+            id: item[0],
+            remitente: item[1],
+            email: item[2],
+            asunto: "Correos antiguos",
+            conteo: item[3]
+        }));
+        
+        renderizar({lista: listaFormateada, email: "Cuenta Vinculada"});
+        
+        // Limpiamos la URL para que no quede el "churro" de letras
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('login') === 'success') {
+        window.location.href = API_URL + "?action=list";
     }
 };
 
@@ -192,9 +197,28 @@ function ejecutarBorradoMasivo(id, email) {
 }
 
 function verTodos(email) {
-    // La URL más sencilla es la que menos rompe el móvil
-    const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent("from:" + email);
-    window.location.href = url; // En la misma ventana para que el móvil salte a la App
+    if(!email) return;
+
+    // Creamos un formulario dinámico
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = 'https://mail.google.com/mail/u/0/';
+    form.target = '_blank'; // Para que intente abrir pestaña nueva
+
+    // El parámetro 'q' es la clave de búsqueda de Gmail
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'q';
+    input.value = 'from:' + email;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    
+    // Lo enviamos. Esto fuerza a Gmail a recibir el parámetro 'q'
+    form.submit();
+    
+    // Limpiamos
+    document.body.removeChild(form);
 }
 
 // --- CAMBIO PARA QUE LA LISTA CARGUE EN MÓVIL ---
