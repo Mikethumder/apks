@@ -2,66 +2,65 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LimpiaGmail</title>
     <style>
-        body { margin: 0; font-family: sans-serif; text-align: center; background: #f8f9fa; }
-        .header { background: #d93025; color: white; padding: 50px 20px 20px; }
-        .btn-main { 
-            display: block; width: 80%; max-width: 300px; margin: 50px auto;
-            background: #d93025; color: white; border: none; padding: 20px; 
-            border-radius: 12px; font-weight: bold; font-size: 1.2rem;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            -webkit-tap-highlight-color: transparent;
+        body { text-align: center; font-family: sans-serif; padding-top: 50px; background: #f0f0f0; }
+        /* Forzamos el cursor para confirmar que el botón es clickable */
+        .boton { 
+            background: #d93025; 
+            color: white; 
+            padding: 20px 40px; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            border: none; 
+            cursor: pointer !important; 
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-        #user-account { margin-top: 10px; color: #666; }
+        .boton:hover { background: #b31412; }
     </style>
 </head>
 <body>
 
-<div class="header">
     <h2>LimpiaGmail Pro</h2>
-    <div id="user-account">Estado: Verificando...</div>
-</div>
+    <p id="status">Estado: Cargando...</p>
+    
+    <button class="boton" onclick="conectar()">CONECTAR MI GMAIL</button>
 
-<button class="btn-main" id="btn-login">CONECTAR GMAIL</button>
+    <script>
+        // LA URL DE TU SCRIPT
+        var URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
-<script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
-    const btn = document.getElementById('btn-login');
+        function conectar() {
+            console.log("Clic detectado");
+            // 1. Abrir la ventana de Google
+            var win = window.open(URL, "_blank", "width=500,height=600");
+            
+            // 2. Avisar al usuario
+            document.getElementById('status').innerText = "Estado: Esperando autorización...";
 
-    // 1. Verificar si ya estás logueado
-    async function checkStatus() {
-        try {
-            const response = await fetch(API_URL + "?action=list");
-            const data = await response.json();
-            if (data.email && data.email !== "No identificado") {
-                document.getElementById('user-account').innerText = "Cuenta: " + data.email;
-                btn.innerText = "BUSCAR CORREOS";
-            } else {
-                document.getElementById('user-account').innerText = "Estado: Desconectado";
-            }
-        } catch (e) {
-            document.getElementById('user-account').innerText = "Estado: Sin conexión";
+            // 3. Vigilar el cierre
+            var timer = setInterval(function() {
+                if (!win || win.closed) {
+                    clearInterval(timer);
+                    location.reload();
+                }
+            }, 1000);
         }
-    }
 
-    // 2. Acción de clic ultra-simple
-    btn.onclick = function() {
-        console.log("Clic detectado");
-        // Abrimos la ventana de Google
-        const win = window.open(API_URL, '_blank', 'width=500,height=600');
-        
-        // Esperar a que se cierre para recargar
-        const timer = setInterval(function() {
-            if (!win || win.closed) {
-                clearInterval(timer);
-                location.reload();
-            }
-        }, 1000);
-    };
-
-    window.onload = checkStatus;
-</script>
+        // Comprobar estado al entrar (versión compatible antigua)
+        fetch(URL + "?action=list")
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.email) {
+                    document.getElementById('status').innerText = "Conectado: " + data.email;
+                } else {
+                    document.getElementById('status').innerText = "Estado: Desconectado";
+                }
+            })
+            .catch(function() {
+                document.getElementById('status').innerText = "Estado: Listo para conectar";
+            });
+    </script>
 </body>
 </html>
