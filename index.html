@@ -126,24 +126,35 @@
         }
     }
 
-    function abrirVentanaLogin() {
-        document.getElementById('modal-auth-info').style.display = 'none';
-        const w = 500, h = 600;
-        const left = (screen.width/2)-(w/2), top = (screen.height/2)-(h/2);
-        
-        winAuth = window.open(API_URL, 'GoogleAuth', `width=${w},height=${h},top=${top},left=${left}`);
+   function abrirVentanaLogin() {
+    document.getElementById('modal-auth-info').style.display = 'none';
+    
+    // Dimensiones para que Chrome lo detecte como interacción válida
+    const w = 480, h = 600;
+    const left = (screen.width/2)-(w/2), top = (screen.height/2)-(h/2);
+    
+    // Abrimos la ventana
+    winAuth = window.open(API_URL, 'GoogleAuth', `width=${w},height=${h},top=${top},left=${left}`);
 
-        // Esperar cierre de ventana
-        const timer = setInterval(() => {
-            if (winAuth.closed) {
-                clearInterval(timer);
-                verificarSesion().then(() => {
-                    if(estaAutorizado) ejecutarEscaneo();
-                });
-            }
-        }, 1000);
-    }
-
+    // Este es el truco: Vigilamos el cierre pero al cerrar RECARGAMOS la sesión
+    const timer = setInterval(async () => {
+        if (!winAuth || winAuth.closed) {
+            clearInterval(timer);
+            
+            // Forzamos un pequeño delay para que Google registre la sesión
+            setTimeout(async () => {
+                await verificarSesion(); 
+                if(estaAutorizado) {
+                    ejecutarEscaneo();
+                } else {
+                    // Si sigue sin detectar, intentamos una recarga dura
+                    console.log("Reintentando conexión profunda...");
+                    location.reload(); 
+                }
+            }, 1000);
+        }
+    }, 800);
+}
     async function ejecutarEscaneo() {
         const loader = document.getElementById('loading-overlay');
         const listaDiv = document.getElementById('lista');
