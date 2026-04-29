@@ -191,7 +191,7 @@ function ejecutar(id, accion) {
 
                     <div class="grid-botones">
                         <button class="btn-action btn-ver" onclick="verTodos('${item.email}')">Ver (${item.conteo})</button>
-                        <button class="btn-action btn-borrar" onclick="ejecutar('${item.id}', 'delete')">Borrar</button>
+                        <button class="btn-action btn-borrar" onclick="ejecutarBorradoMasivo('${item.id}', '${item.email}')">Borrar</button>
                         <button class="btn-action btn-baja" onclick="ejecutar('${item.id}', 'unsubscribe')">Baja</button>
                     </div>
                 </div>`;
@@ -230,6 +230,30 @@ function ejecutar(id, accion) {
             s.src = `${API_URL}?action=${accion}&id=${id}&callback=${cb}&t=${Date.now()}`;
             document.body.appendChild(s);
         }
+        function ejecutarBorradoMasivo(id, email) {
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = "0.3";
+    card.style.pointerEvents = "none";
+    
+    const cb = "cb_" + Math.floor(Math.random() * 1000000);
+    window[cb] = function(res) {
+        if (res.status === "ok") {
+            card.style.transition = "all 0.5s ease";
+            card.style.transform = "scale(0)";
+            setTimeout(() => card.remove(), 500);
+        } else {
+            card.style.opacity = "1";
+            card.style.pointerEvents = "all";
+            alert("Error: " + res.msg);
+        }
+        delete window[cb];
+    };
+
+    const s = document.createElement('script');
+    // IMPORTANTE: Ahora pasamos el parámetro &email en lugar de solo el id
+    s.src = `${API_URL}?action=delete&email=${encodeURIComponent(email)}&id=${id}&callback=${cb}&t=${Date.now()}`;
+    document.body.appendChild(s);
+}
     </script>
 </body>
 </html>
