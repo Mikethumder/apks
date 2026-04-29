@@ -171,22 +171,22 @@ async function escanear() {
 function lanzarLogin() {
     cerrarModal('modal-auth-info');
     
-    const width = 500, height = 650;
-    const left = (window.innerWidth / 2) - (width / 2);
-    const top = (window.innerHeight / 2) - (height / 2);
+    // Ajustamos a un tamaño que Android maneje mejor
+    const width = 450;
+    const height = 600;
+    const left = (screen.width / 2) - (width / 2);
+    const top = (screen.height / 2) - (height / 2);
     
-    authWin = window.open(API_URL, 'GoogleAuth', `width=${width},height=${height},top=${top},left=${left}`);
+    authWin = window.open(API_URL, 'GoogleAuth', 
+        `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,status=1`);
 
-    // Verificamos cuando se cierra
     const timer = setInterval(() => {
         if (authWin.closed) {
             clearInterval(timer);
-            // Re-intentamos escanear automáticamente al cerrar la ventana
-            escanear();
+            escanear(); // Esto recargará los datos automáticamente
         }
     }, 600);
 }
-
 function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
 function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
