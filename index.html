@@ -138,17 +138,17 @@ function pedirLista() {
 function verTodos(email) {
     if(!email) return;
     
-    // El secreto es usar 'search' como vista principal
-    const query = encodeURIComponent("from:" + email);
+    // El formato más simple es el más efectivo
+    const query = "from:" + email;
     
-    // Esta URL es la más potente para forzar el filtro en móviles:
-    const url = "https://mail.google.com/mail/u/0/?view=tl&search=query&q=" + query;
+    // Esta URL funciona en PC y "despierta" el buscador en el móvil
+    const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query);
 
-    // En móviles, forzamos la misma pestaña para que el Sistema Operativo 
-    // decida abrir la App de Gmail en lugar del navegador.
+    // Si es móvil, usamos la misma ventana para forzar a la App a abrirse
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         window.location.href = url;
     } else {
+        // En PC, abrimos en pestaña nueva
         window.open(url, '_blank');
     }
 }
