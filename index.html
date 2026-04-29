@@ -203,10 +203,10 @@ function ejecutar(id, accion) {
 
     if (accion === 'unsubscribe') {
         const respuesta = confirm(
-            "SOLICITUD DE BAJA\n\n" +
-            "¿Quieres también BORRAR todos los correos de este remitente?\n\n" +
-            "• ACEPTAR: Tramitar baja + Borrar todo.\n" +
-            "• CANCELAR: Tramitar baja + Dejar correos en la bandeja."
+            "TRÁMITE DE BAJA\n\n" +
+            "¿Deseas BORRAR todos los correos ahora?\n\n" +
+            "• SÍ (Aceptar): Se borran todos.\n" +
+            "• NO (Cancelar): Se intenta la baja, pero los correos SE QUEDAN en tu bandeja."
         );
         if (respuesta) borrarTambien = true;
     }
@@ -219,31 +219,28 @@ function ejecutar(id, accion) {
     window[cb] = function(res) {
         if (res.status === "ok") {
             card.style.transition = "all 0.5s ease";
-            // Si solo fue baja sin borrar, quizás prefieras que la tarjeta NO desaparezca, 
-            // pero lo ideal es que se vaya de la lista de "pendientes" para no repetir.
             card.style.transform = "scale(0.9)";
             card.style.opacity = "0";
             setTimeout(() => card.remove(), 500);
         } else {
             card.style.opacity = "1";
             card.style.pointerEvents = "all";
-            alert("Error en el proceso.");
+            alert("Proceso finalizado.");
         }
         delete window[cb];
     };
 
     const s = document.createElement('script');
-    let url = `${API_URL}?action=${accion}&id=${id}&callback=${cb}&t=${Date.now()}`;
+    // Sacamos el email de la función onclick del botón "Ver" que ya está en la tarjeta
+    const email = card.querySelector('.btn-ver').getAttribute('onclick').match(/'([^']+)'/)[1];
     
-    if (borrarTambien) {
-        // Buscamos el email dentro del botón de Ver que ya lo tiene
-        const email = card.querySelector('.btn-ver').getAttribute('onclick').match(/'([^']+)'/)[1];
-        url += `&extra=delete&email=${encodeURIComponent(email)}`;
-    }
+    let url = `${API_URL}?action=${accion}&id=${id}&callback=${cb}`;
+    if (borrarTambien) url += `&extra=delete&email=${encodeURIComponent(email)}`;
     
     s.src = url;
     document.body.appendChild(s);
 }
+
     </script>
 </body>
 </html>
