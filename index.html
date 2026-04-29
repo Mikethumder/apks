@@ -1,89 +1,71 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LimpiaGmail</title>
-    <style>
-        body { text-align: center; font-family: sans-serif; background: #f0f2f5; margin: 0; padding-top: 80px; }
-        .header { background: #d93025; color: white; padding: 20px; position: fixed; top: 0; width: 100%; }
-        .btn { 
-            background: #d93025; color: white; padding: 20px 40px; font-size: 18px; 
-            border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-top: 40px;
-        }
-    </style>
-</head>
-<body>
-
-<div class="header"><h2>LimpiaGmail Pro</h2></div>
-
-<p id="status">Estado: Verificando cuenta...</p>
-<button class="btn" id="btn-accion" onclick="iniciar()">CONECTAR GMAIL</button>
-
-<div id="lista" style="padding: 20px; text-align: left; max-width: 500px; margin: auto;"></div>
-
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
-    // 1. Al cargar la página
-    window.onload = async function() {
-        try {
-           
-            const res = await fetch(API_URL + "?action=list&nocache=" + new Date().getTime());
-            const data = await res.json();
-            
-            if (data.email && data.email !== "No identificado") {
-                document.getElementById('status').innerText = "Conectado como: " + data.email;
-                document.getElementById('btn-accion').innerText = "BUSCAR SUSCRIPCIONES";
-                document.getElementById('btn-accion').onclick = buscar;
-                
-                // Si acabamos de volver del login, buscamos automático
-                const params = new URLSearchParams(window.location.search);
-                if(params.get('login') === 'success') buscar();
-                
-            } else {
-                document.getElementById('status').innerText = "Estado: Desconectado";
-            }
-        } catch(e) {
-            document.getElementById('status').innerText = "Listo para conectar";
+    // Función principal que se ejecuta al cargar
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Si acabamos de volver de Google (traemos ?login=success en la URL)
+        if (urlParams.get('login') === 'success') {
+            document.getElementById('status').innerText = "¡Conexión confirmada!";
+            ejecutarCargaDeCorreos();
+        } else {
+            // Si no, verificamos sesión de forma normal
+            verificarSesionSilenciosa();
         }
     };
 
-    // 2. Ir a Google (en la misma pestaña)
-    function iniciar() {
-        window.location.href = API_URL;
-    }
-
-    // 3. Buscar correos
-    async function buscar() {
-        document.getElementById('status').innerText = "Escaneando correos...";
+    async function verificarSesionSilenciosa() {
         try {
             const res = await fetch(API_URL + "?action=list&t=" + Date.now());
             const data = await res.json();
-            render(data.lista);
-        } catch(e) { alert("Error al buscar"); }
+            if (data.email && data.email !== "No identificado") {
+                mostrarInterfazLogueado(data.email);
+            }
+        } catch (e) {
+            console.log("Sesión no detectada automáticamente.");
+        }
     }
 
-    function render(lista) {
-        let html = '';
-        if(!lista || lista.length === 0) { html = "No se encontraron correos."; }
-        else {
-            lista.forEach(item => {
-                html += `<div style="background:white; pading:15px; margin-bottom:10px; border-radius:8px; border-left:5px solid red; padding:10px;">
-                    <b>${item.remitente}</b><br><small>${item.asunto}</small>
-                </div>`;
-            });
-        }
-        document.getElementById('lista').innerHTML = html;
-        document.getElementById('status').innerText = "Escaneo completado";
+    function mostrarInterfazLogueado(email) {
+        document.getElementById('user-account').innerText = "Cuenta: " + email;
+        const btn = document.getElementById('btn-login');
+        btn.innerText = "BUSCAR SUSCRIPCIONES";
+        btn.onclick = ejecutarCargaDeCorreos;
+        btn.style.background = "#0b8043"; // Cambiamos a verde para indicar éxito
     }
-    
-    function iniciar() {
-    // Usamos _self para que NO abra ventanas nuevas
-    window.open(API_URL, "_self");
+
+    async function ejecutarCargaDeCorreos() {
+        const status = document.getElementById('status');
+        const listaDiv = document.getElementById('lista');
+        
+        status.innerText = "Buscando correos (esto puede tardar 10s)...";
+        listaDiv.innerHTML = '<div class="spinner"></div>';
+
+        try {
+            // Añadimos el timestamp para evitar la caché del navegador
+            const res = await fetch(API_URL + "?action=list&t=" + Date.now());
+            const data = await res.json();
+            
+            if (data.lista && data.lista.length > 0) {
+                let html = "";
+                data.lista.forEach(item => {
+                    html += `
+                        <div style="background:white; padding:15px; border-radius:10px; margin-bottom:10px; border-left:5px solid #d93025; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-weight:bold; color:#1a73e8;">${item.remitente}</div>
+                            <div style="font-size:0.9rem;">${item.asunto}</div>
+                        </div>`;
+                });
+                listaDiv.innerHTML = html;
+                status.innerText = "Escaneo completado. Encontrados: " + data.lista.length;
+                mostrarInterfazLogueado(data.email);
+            } else {
+                listaDiv.innerHTML = "No se encontraron correos de suscripciones.";
+                status.innerText = "Escaneo finalizado.";
+            }
+        } catch (e) {
+            status.innerText = "Error de conexión. Inténtalo de nuevo.";
+            console.error(e);
+        }
     }
 </script>
-    
-</body>
-</html>
