@@ -29,7 +29,8 @@
     // 1. Al cargar la página
     window.onload = async function() {
         try {
-            const res = await fetch(API_URL + "?action=list&t=" + Date.now());
+           
+            const res = await fetch(API_URL + "?action=list&nocache=" + new Date().getTime());
             const data = await res.json();
             
             if (data.email && data.email !== "No identificado") {
