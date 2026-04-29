@@ -2,197 +2,71 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>LimpiaGmail</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>LimpiaGmail Pro</title>
     <style>
         :root { --primary: #d93025; --bg: #f8f9fa; --text: #202124; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+        
+        /* Reset para evitar que se vea como texto plano */
+        html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: var(--bg); }
 
-        /* Header ajustado para evitar la cámara/Notch */
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+
+        /* Header ajustado para Notch y cámaras frontales */
         .header { 
             background: var(--primary); 
             color: white; 
-            padding: 55px 20px 20px 20px; 
+            padding: 60px 20px 20px 20px; 
             text-align: center; 
             position: sticky; 
             top: 0; 
             z-index: 100;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
-        .header h2 { margin: 0; font-size: 1.4rem; letter-spacing: 1px; }
-        #user-account { font-size: 0.85rem; margin-top: 8px; opacity: 0.9; font-weight: 300; }
+        .header h2 { margin: 0; font-size: 1.4rem; letter-spacing: 0.5px; font-weight: 600; }
+        #user-account { font-size: 0.85rem; margin-top: 8px; opacity: 0.9; font-weight: 400; }
 
-        .controls { padding: 20px; background: white; border-bottom: 1px solid #ddd; }
+        /* Controles */
+        .controls { padding: 20px; background: white; border-bottom: 1px solid #e0e0e0; }
         .btn-main { 
             width: 100%; background: var(--primary); color: white; border: none; 
-            padding: 16px; border-radius: 12px; font-weight: bold; font-size: 1rem;
-            box-shadow: 0 4px 6px rgba(217, 48, 37, 0.2); transition: 0.2s;
+            padding: 16px; border-radius: 12px; font-weight: bold; font-size: 1.1rem;
+            box-shadow: 0 4px 10px rgba(217, 48, 37, 0.3); transition: all 0.2s ease;
         }
-        .btn-main:active { transform: scale(0.98); opacity: 0.9; }
-        .btn-main:disabled { background: #ccc; box-shadow: none; }
+        .btn-main:active { transform: scale(0.97); opacity: 0.9; }
+        .btn-main:disabled { background: #bdc1c6; box-shadow: none; }
 
-        .container { padding: 15px; }
+        /* Listado */
+        .container { padding: 15px; padding-bottom: 50px; }
         .card { 
-            background: white; border-radius: 15px; padding: 18px; margin-bottom: 15px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 6px solid var(--primary);
-            transition: opacity 0.5s ease;
+            background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 6px solid var(--primary);
+            animation: fadeIn 0.4s ease forwards;
         }
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .sender { font-weight: 700; font-size: 1.05rem; color: #1a73e8; }
-        .count-badge { background: #fce8e6; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        .subject { font-size: 0.9rem; color: #5f6368; margin-bottom: 15px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .sender { font-weight: 700; font-size: 1.05rem; color: #1a73e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+        .count-badge { background: #fce8e6; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
+        .subject { font-size: 0.9rem; color: #5f6368; margin-bottom: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .btn-action { padding: 10px 5px; border-radius: 8px; border: 1px solid #dadce0; background: white; font-size: 0.75rem; font-weight: 600; color: #3c4043; }
+        .btn-action { padding: 12px 5px; border-radius: 8px; border: 1px solid #dadce0; background: white; font-size: 0.75rem; font-weight: 600; color: #3c4043; text-transform: uppercase; }
 
-        /* Spinner */
+        /* Spinner Animado */
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1); width: 40px; height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.05); width: 45px; height: 45px;
             border-radius: 50%; border-left-color: var(--primary);
-            animation: spin 1s linear infinite; margin: 20px auto;
+            animation: spin 0.8s linear infinite; margin: 30px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Modales */
         .modal { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; 
+            background: rgba(0,0,0,0.75); z-index: 200; align-items: center; justify-content: center; 
+            backdrop-filter: blur(2px);
         }
-        .modal-content { background: white; width: 85%; max-height: 75%; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
-        .modal-body { padding: 25px; overflow-y: auto; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; color: #3c4043; }
-        .modal-footer { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; }
-        .btn-modal { flex: 1; padding: 14px; border: none; border-radius: 10px; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<div class="header">
-    <h2>LimpiaGmail Pro</h2>
-    <div id="user-account">Detectando cuenta...</div>
-</div>
-
-<div class="controls">
-    <button class="btn-main" id="btn-scan" onclick="escanear()">BUSCAR SUSCRIPCIONES</button>
-</div>
-
-<div class="container">
-    <div id="loading-overlay" style="display:none; text-align:center; padding: 50px 0;">
-        <div class="spinner"></div>
-        <p style="color: #666;">Conectando con tu Gmail...</p>
-    </div>
-    <div id="lista"></div>
-</div>
-
-<div id="modal-view" class="modal">
-    <div class="modal-content">
-        <div id="view-body" class="modal-body"></div>
-        <div class="modal-footer">
-            <button class="btn-modal" style="background:#5f6368; color:white;" onclick="cerrarModal('modal-view')">CERRAR</button>
-        </div>
-    </div>
-</div>
-
-<div id="modal-confirm" class="modal">
-    <div class="modal-content" style="width: 280px;">
-        <div class="modal-body" id="confirm-text" style="text-align:center; padding:30px 20px;"></div>
-        <div class="modal-footer">
-            <button class="btn-modal" style="background:var(--primary); color:white;" id="btn-si">SÍ, BORRAR</button>
-            <button class="btn-modal" style="background:#eee;" onclick="cerrarModal('modal-confirm')">NO</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
-    let datosLocales = [];
-    let idTemporal = "";
-
-    async function escanear() {
-        const btn = document.getElementById('btn-scan');
-        const loader = document.getElementById('loading-overlay');
-        const listaDiv = document.getElementById('lista');
-
-        btn.disabled = true;
-        btn.innerText = "BUSCANDO...";
-        loader.style.display = 'block';
-        listaDiv.innerHTML = '';
-
-        try {
-            const res = await fetch(`${API_URL}?action=list`);
-            const data = await res.json();
-            
-            if(data.email) document.getElementById('user-account').innerText = "Cuenta: " + data.email;
-            datosLocales = data.lista || [];
-            renderizarLista();
-        } catch (e) {
-            alert("Error al conectar. Verifica los permisos del Script.");
-        } finally {
-            loader.style.display = 'none';
-            btn.disabled = false;
-            btn.innerText = "BUSCAR SUSCRIPCIONES";
-        }
-    }
-
-    function renderizarLista() {
-        const contenedor = document.getElementById('lista');
-        if (datosLocales.length === 0) {
-            contenedor.innerHTML = '<p style="text-align:center; margin-top:40px; color:#999;">¡Bandeja limpia!</p>';
-            return;
-        }
-
-        let html = '';
-        datosLocales.forEach(item => {
-            const nombre = item.remitente.split('<')[0].replace(/"/g, '') || "Remitente";
-            html += `
-                <div class="card" id="card-${item.id}">
-                    <div class="card-header">
-                        <span class="sender">${nombre}</span>
-                        <span class="count-badge">${item.conteo}</span>
-                    </div>
-                    <div class="subject">${item.asunto}</div>
-                    <div class="actions">
-                        <button class="btn-action" onclick="visualizar('${item.id}')">VER</button>
-                        <button class="btn-action" onclick="pedirConfirmacion('${item.id}', ${item.conteo})">BORRAR</button>
-                        <button class="btn-action" onclick="window.open('${item.enlaceBaja}')" ${!item.enlaceBaja ? 'disabled style="opacity:0.4"' : ''}>BAJA</button>
-                    </div>
-                </div>`;
-        });
-        contenedor.innerHTML = html;
-    }
-
-    async function visualizar(id) {
-        abrirModal('modal-view');
-        const viewBody = document.getElementById('view-body');
-        viewBody.innerHTML = '<div class="spinner"></div><p style="text-align:center">Leyendo...</p>';
-        
-        try {
-            const res = await fetch(`${API_URL}?action=getContent&id=${id}`);
-            const data = await res.json();
-            viewBody.innerText = data.cuerpo || "Sin contenido de texto.";
-        } catch (e) { viewBody.innerText = "Error al cargar el mensaje."; }
-    }
-
-    function pedirConfirmacion(id, total) {
-        idTemporal = id;
-        document.getElementById('confirm-text').innerText = `¿Enviar ${total} correos a la papelera?`;
-        abrirModal('modal-confirm');
-        document.getElementById('btn-si').onclick = borrarYa;
-    }
-
-    async function borrarYa() {
-        const id = idTemporal;
-        cerrarModal('modal-confirm');
-        const card = document.getElementById(`card-${id}`);
-        if(card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
-        
-        await fetch(`${API_URL}?action=delete&ids=${id}`);
-        if(card) card.remove();
-        datosLocales = datosLocales.filter(i => i.id !== id);
-    }
-
-    function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-</script>
-
-</body>
-</html>
+        .modal-content { background: white; width: 90%; max-height: 80%; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-body { padding: 25px; overflow-y: auto; font-size: 1rem; line-height: 1.6; white-space: pre-wrap; color: #
