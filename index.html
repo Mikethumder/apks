@@ -43,5 +43,36 @@
             }, 1000);
         }
     </script>
+    <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+
+    async function verificar() {
+        // Miramos si venimos de la redirección de Google
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('login') === 'success') {
+            console.log("Login detectado por URL");
+        }
+
+        try {
+            const res = await fetch(API_URL + "?action=list&t=" + Date.now());
+            const data = await res.json();
+            if (data.email && data.email !== "No identificado") {
+                document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+                document.getElementById('btn-login').innerText = "BUSCAR SUSCRIPCIONES";
+                // Si ya estamos logueados, lanzamos el escaneo automáticamente
+                escanearCorreos(); 
+            }
+        } catch(e) {
+            console.log("Aún sin sesión");
+        }
+    }
+
+    // El botón ahora abre Google en la MISMA pestaña para evitar líos de ventanas
+    document.getElementById('btn-login').onclick = function() {
+        window.location.href = API_URL;
+    };
+
+    window.onload = verificar;
+</script>
 </body>
 </html>
