@@ -101,6 +101,36 @@
     let estaAutorizado = false;
     let winAuth;
 
+    // Creamos el canal de escucha
+const canalAuth = new BroadcastChannel('limpiagmail_auth');
+
+canalAuth.onmessage = (event) => {
+    if (event.data === 'login_exitoso') {
+        console.log("Señal de login recibida");
+        if (winAuth) winAuth.close(); // Intentamos cerrar la ventana desde aquí
+        verificarSesion().then(() => {
+            if(estaAutorizado) ejecutarEscaneo();
+        });
+    }
+};
+
+// Modifica también la función abrirVentanaLogin para que sea más robusta
+function abrirVentanaLogin() {
+    document.getElementById('modal-auth-info').style.display = 'none';
+    const w = 500, h = 650;
+    const left = (screen.width/2)-(w/2), top = (screen.height/2)-(h/2);
+    
+    // Abrimos la ventana
+    winAuth = window.open(API_URL, 'GoogleAuth', `width=${w},height=${h},top=${top},left=${left}`);
+
+    // Si el usuario cierra la ventana a mano (la X), también refrescamos
+    const timer = setInterval(() => {
+        if (!winAuth || winAuth.closed) {
+            clearInterval(timer);
+            verificarSesion().then(() => { if(estaAutorizado) ejecutarEscaneo(); });
+        }
+    }, 1000);
+}
     // 1. Al cargar, verificar si ya hay sesión
     window.onload = verificarSesion;
 
