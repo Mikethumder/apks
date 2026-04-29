@@ -6,74 +6,62 @@
     <title>LimpiaGmail</title>
     <style>
         body { margin: 0; font-family: sans-serif; text-align: center; background: #f8f9fa; }
-        .header { background: #d93025; color: white; padding: 60px 20px 20px; }
-        /* Estilo para que el botón se vea y se sienta real */
+        .header { background: #d93025; color: white; padding: 50px 20px 20px; }
         .btn-main { 
-            display: block; width: 85%; max-width: 300px; margin: 40px auto;
+            display: block; width: 80%; max-width: 300px; margin: 50px auto;
             background: #d93025; color: white; border: none; padding: 20px; 
-            border-radius: 12px; font-weight: bold; font-size: 1.1rem;
-            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: transform 0.1s; touch-action: manipulation;
+            border-radius: 12px; font-weight: bold; font-size: 1.2rem;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            -webkit-tap-highlight-color: transparent;
         }
-        .btn-main:active { transform: scale(0.95); background: #b31412; }
-        #user-account { margin-top: 10px; color: #666; font-size: 0.9rem; }
+        #user-account { margin-top: 10px; color: #666; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h2>LimpiaGmail Pro</h2>
-    <div id="user-account">Estado: Desconectado</div>
+    <div id="user-account">Estado: Verificando...</div>
 </div>
 
-<button class="btn-main" id="btn-login">CONECTAR MI CUENTA</button>
-
-<div id="lista" style="padding: 20px;"></div>
+<button class="btn-main" id="btn-login">CONECTAR GMAIL</button>
 
 <script>
-    // URL DE TU SCRIPT
-    const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+    const btn = document.getElementById('btn-login');
 
-    const boton = document.getElementById('btn-login');
-    const cuentaTxt = document.getElementById('user-account');
-
-    // 1. FUNCIÓN DE CARGA INICIAL
-    async function inicializar() {
-        console.log("Verificando sesión...");
+    // 1. Verificar si ya estás logueado
+    async function checkStatus() {
         try {
-            const respuesta = await fetch(API_URL + "?action=list&t=" + Date.now());
-            const datos = await respuesta.json();
-            if (datos.email && datos.email !== "No identificado") {
-                cuentaTxt.innerText = "Cuenta: " + datos.email;
-                boton.innerText = "BUSCAR CORREOS";
+            const response = await fetch(API_URL + "?action=list");
+            const data = await response.json();
+            if (data.email && data.email !== "No identificado") {
+                document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+                btn.innerText = "BUSCAR CORREOS";
+            } else {
+                document.getElementById('user-account').innerText = "Estado: Desconectado";
             }
-        } catch(e) {
-            console.log("No hay sesión activa.");
+        } catch (e) {
+            document.getElementById('user-account').innerText = "Estado: Sin conexión";
         }
     }
 
-    // 2. FUNCIÓN DEL BOTÓN (Directa, sin modales)
-    boton.onclick = function() {
-        console.log("Botón pulsado");
-        
+    // 2. Acción de clic ultra-simple
+    btn.onclick = function() {
+        console.log("Clic detectado");
         // Abrimos la ventana de Google
-        const win = window.open(API_URL, 'auth', 'width=500,height=600');
+        const win = window.open(API_URL, '_blank', 'width=500,height=600');
         
-        // Cambiamos el texto para que sepas que está esperando
-        boton.innerText = "COMPROBANDO...";
-
+        // Esperar a que se cierre para recargar
         const timer = setInterval(function() {
-            if (win.closed) {
+            if (!win || win.closed) {
                 clearInterval(timer);
-                console.log("Ventana cerrada, recargando...");
-                // Forzamos la recarga para que el estado cambie
                 location.reload();
             }
         }, 1000);
     };
 
-    // Lanzar al cargar
-    window.onload = inicializar;
+    window.onload = checkStatus;
 </script>
 </body>
 </html>
