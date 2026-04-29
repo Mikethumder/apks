@@ -7,7 +7,33 @@
     <style>
         :root { --primary: #d93025; --secondary: #5f6368; --bg: #f1f3f4; }
         body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: #3c4043; }
-        
+       /* El círculo de carga */
+    .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: var(--primary);
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-bottom: 10px;
+    }
+
+    @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+    }
+
+    /* Contenedor del estado de carga */
+    #loading-overlay {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--secondary);
+} 
         /* Cabecera */
         .header { 
     background: var(--primary); 
@@ -20,8 +46,8 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
 }
 
-/* Añade esto para que el Notch no moleste en ningún móvil */
-@supports (padding-top: env(safe-area-inset-top)) {
+    /* Añade esto para que el Notch no moleste en ningún móvil */
+    @supports (padding-top: env(safe-area-inset-top)) {
     .header {
         padding-top: calc(env(safe-area-inset-top) + 15px);
     }
@@ -72,7 +98,10 @@
 </div>
 
 <div class="container">
-    <div id="loading">Escaneando tu bandeja de entrada...</div>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text">Conectando con Gmail...</div>
+    </div>
     <div id="lista"></div>
 </div>
 
@@ -133,26 +162,43 @@
         });
     }
 
-    async function visualizar(id) {
+   async function visualizar(id) {
+    // 1. Abrimos el modal inmediatamente
     abrirModal('modal-view');
     const viewBody = document.getElementById('view-body');
-    viewBody.innerText = "Abriendo mensaje...";
     
+    // 2. Ponemos el spinner dentro del modal mientras carga
+    viewBody.innerHTML = `
+        <div style="text-align:center; padding:50px;">
+            <div class="spinner"></div>
+            <p>Leyendo mensaje...</p>
+        </div>
+    `;
+
     try {
-        const res = await fetch(`${API_URL}?action=getContent&id=${id}`);
-        const data = await res.json();
+        // Añadimos un timestamp para evitar que el navegador use una respuesta vieja (caché)
+        const response = await fetch(`${API_URL}?action=getContent&id=${id}&t=${Date.now()}`);
         
+        if (!response.ok) throw new Error("Error en la respuesta del servidor");
+        
+        const data = await response.json();
+
         if (data.error) {
-            viewBody.innerText = "Error del servidor: " + data.error;
+            viewBody.innerHTML = `<p style="color:red">Error: ${data.error}</p>`;
         } else {
-            // Actualizamos el email en el selector
-            if(data.emailActivo) {
-                document.getElementById('cuenta').options[0].text = data.emailActivo;
-            }
-            viewBody.innerText = data.cuerpo || "Mensaje sin texto legible.";
+            // Actualizamos el email si viene en la respuesta
+            if(data.emailActivo) document.getElementById('cuenta').options[0].text = data.emailActivo;
+            
+            // Insertamos el texto (usamos innerText para seguridad, pero en un div)
+            viewBody.innerText = data.cuerpo || "Este correo no contiene texto plano.";
         }
-    } catch (e) {
-        viewBody.innerText = "Error de red: No se pudo conectar con el script.";
+    } catch (error) {
+        console.error(error);
+        viewBody.innerHTML = `
+            <p style="color:red; text-align:center;">
+                No se pudo cargar el contenido.<br>
+                <small>Verifica que publicaste la Nueva Versión del Script.</small>
+            </p>`;
     }
 }
 
