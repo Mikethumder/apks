@@ -86,82 +86,86 @@
 <body>
 
 <div class="header">
-    <h2>LimpiaGmail Pro</h2>
+    <h2 id="app-title">LimpiaGmail Pro</h2>
+    <div id="user-account" style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">Cuenta: Detectando...</div>
 </div>
 
 <div class="controls">
-    <label style="font-size: 0.8rem; color: #666;">Cuenta activa:</label>
-    <select id="cuenta">
-        <option>Principal (Google Auth)</option>
-    </select>
-    <button class="btn-main" onclick="escanear()">BUSCAR SUSCRIPCIONES</button>
+    <button class="btn-main" id="btn-scan" onclick="escanear()">BUSCAR SUSCRIPCIONES</button>
 </div>
 
 <div class="container">
-    <div id="loading-overlay">
+    <div id="loading-overlay" style="display:none; text-align:center; padding: 20px;">
         <div class="spinner"></div>
-        <div id="loading-text">Conectando con Gmail...</div>
+        <p>Conectando con Gmail...</p>
     </div>
     <div id="lista"></div>
 </div>
 
-<div id="modal-view" class="modal">
-    <div class="modal-content">
-        <div id="view-body" class="modal-body">Cargando mensaje...</div>
-        <div class="modal-footer">
-            <button class="btn-close" onclick="cerrarModal('modal-view')">VOLVER AL LISTADO</button>
-        </div>
-    </div>
-</div>
-
-<div id="modal-confirm" class="modal">
-    <div class="modal-content" style="max-width: 300px;">
-        <div class="modal-body" id="confirm-text" style="text-align: center;"></div>
-        <div class="modal-footer">
-            <button class="btn-confirm" id="btn-ejecutar-borrado">SÍ, BORRAR</button>
-            <button class="btn-close" onclick="cerrarModal('modal-confirm')">NO</button>
-        </div>
-    </div>
-</div>
-
 <script>
-    // REEMPLAZA ESTA URL CON LA TUYA
     const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
-    
-    let datosLocales = []; // Guardamos la lista aquí
+    let datosLocales = [];
 
     async function escanear() {
-        document.getElementById('loading').style.display = 'block';
+        const btn = document.getElementById('btn-scan');
+        const loader = document.getElementById('loading-overlay');
+        const listaDiv = document.getElementById('lista');
+
+        // Estado inicial
+        btn.disabled = true;
+        btn.innerText = "BUSCANDO...";
+        loader.style.display = 'block';
+        listaDiv.innerHTML = '';
+
         try {
             const res = await fetch(`${API_URL}?action=list`);
-            datosLocales = await res.json();
+            const data = await res.json();
+            
+            // Actualizar email de la cuenta
+            if(data.email) document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+            
+            datosLocales = data.lista || [];
             renderizarLista();
-        } catch (e) { alert("Error de conexión"); }
-        document.getElementById('loading').style.display = 'none';
+        } catch (e) {
+            alert("Error de conexión. Verifica la URL del Script.");
+        } finally {
+            loader.style.display = 'none';
+            btn.disabled = false;
+            btn.innerText = "BUSCAR SUSCRIPCIONES";
+        }
     }
 
     function renderizarLista() {
         const contenedor = document.getElementById('lista');
-        contenedor.innerHTML = '';
-        datosLocales.forEach((item, index) => {
-            // Creamos un ID único para la tarjeta en el HTML
-            contenedor.innerHTML += `
+        if (datosLocales.length === 0) {
+            contenedor.innerHTML = '<p style="text-align:center">Bandeja limpia. No hay suscripciones.</p>';
+            return;
+        }
+
+        let html = '';
+        datosLocales.forEach(item => {
+            const nombre = item.remitente.split('<')[0].replace(/"/g, '') || "Remitente desconocido";
+            html += `
                 <div class="card" id="card-${item.id}">
                     <div class="card-header">
-                        <span class="sender">${item.remitente.split('<')[0]}</span>
+                        <span class="sender">${nombre}</span>
                         <span class="count-badge">${item.conteo}</span>
                     </div>
-                    <div class="subject">${item.asunto}</div>
+                    <div class="subject">${item.asunto || '(Sin asunto)'}</div>
                     <div class="actions">
-                        <button class="btn-action" onclick="visualizar('${item.id}')">Ver</button>
-                        <button class="btn-action" onclick="confirmarBorrado('${item.id}', ${item.conteo})">Borrar</button>
-                        <button class="btn-action" onclick="darseDeBaja('${item.enlaceBaja}')">Baja</button>
+                        <button class="btn-action" onclick="visualizar('${item.id}')">VER</button>
+                        <button class="btn-action" onclick="confirmarBorrado('${item.id}', ${item.conteo})">BORRAR</button>
+                        <button class="btn-action" onclick="window.open('${item.enlaceBaja}')" ${!item.enlaceBaja ? 'disabled' : ''}>BAJA</button>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
+        contenedor.innerHTML = html;
     }
 
+    // El resto de funciones (visualizar, confirmarBorrado, cerrarModal) se mantienen igual 
+    // pero asegúrate de que visualizar() use data.email si viene en la respuesta.
+</script>
+    
    async function visualizar(id) {
     // 1. Abrimos el modal inmediatamente
     abrirModal('modal-view');
