@@ -187,17 +187,47 @@ function ejecutarBorradoMasivo(id, email) {
 function verTodos(email) {
     if(!email) return;
     
+    // Este formato es un "Universal Link". 
+    // Intenta abrir la App de Gmail directamente con la búsqueda puesta.
     const query = "from:" + email;
-    const encodedQuery = encodeURIComponent(query);
+    const url = "googlegmail:///search?query=" + encodeURIComponent(query);
     
-    // Esta URL es un "Deep Link" que suele forzar la apertura de la App
-    // o de la versión móvil moderna con búsqueda.
-    const url = "https://mail.google.com/mail/u/0/?view=tl&search=query&q=" + encodedQuery + "&t=" + Date.now();
-    
-    // Forzamos la apertura en la misma pestaña para que el móvil lo detecte como una acción del sistema
+    // Si no tiene la App de Gmail, usamos el enlace web de respaldo
+    const backupUrl = "https://mail.google.com/mail/u/0/?view=tl&search=query&q=" + encodeURIComponent(query);
+
+    // Intentamos abrir el protocolo de la App
     window.location.href = url;
+
+    // Si en 500ms no ha pasado nada (no tiene la app), saltamos a la web
+    setTimeout(() => {
+        window.location.href = backupUrl;
+    }, 500);
 }
-        
+
+// --- CAMBIO PARA QUE LA LISTA CARGUE EN MÓVIL ---
+function pedirLista() {
+    btn.style.display = 'none';
+    if(guia) guia.style.display = 'none';
+    loader.style.display = "block";
+    status.innerText = "Conectando con Google...";
+    
+    const cb = "cb" + Date.now(); // ID único
+    window[cb] = function(data) {
+        loader.style.display = "none";
+        btn.style.display = 'block';
+        if (data.lista) {
+            renderizar(data);
+        } else {
+            status.innerText = "Error de respuesta.";
+        }
+        delete window[cb];
+    };
+
+    const s = document.createElement('script');
+    // Añadimos un parámetro aleatorio al final para que el móvil no use la memoria vieja
+    s.src = `${API_URL}?action=list&callback=${cb}&nocache=${Math.random()}`;
+    document.body.appendChild(s);
+}        
 function ejecutar(id, accion) {
     let borrarTambien = false;
 
