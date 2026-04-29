@@ -136,8 +136,21 @@ function pedirLista() {
 
 // FUNCIÓN VER (Simplificada para móvil)
 function verTodos(email) {
-    const url = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
-    window.open(url, '_blank');
+    if(!email) return;
+    
+    const query = "from:" + email;
+    
+    // Esta estructura de URL es la más robusta para que la App de Gmail 
+    // en móviles (iOS/Android) capture la búsqueda correctamente.
+    const urlBusqueda = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query) + "#search/" + encodeURIComponent(query);
+    
+    // En móviles, abrir en la misma pestaña ayuda a que el Sistema Operativo 
+    // detecte el enlace y lo abra directamente en la App de Gmail.
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = urlBusqueda;
+    } else {
+        window.open(urlBusqueda, '_blank');
+    }
 }
 
 // --- 4. RENDERIZAR BLOQUES ---
