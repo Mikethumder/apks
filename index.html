@@ -141,41 +141,73 @@
         document.getElementById('btn-scan').innerText = "CONECTAR Y BUSCAR";
     };
 
-    async function escanear() {
-        const btn = document.getElementById('btn-scan');
-        const loader = document.getElementById('loading-overlay');
-        
-        btn.disabled = true;
+    let loginWindow;
+
+let authWin;
+
+async function escanear() {
+    const btn = document.getElementById('btn-scan');
+    const loader = document.getElementById('loading-overlay');
+    
+    // Intentamos cargar directo
+    try {
         loader.style.display = 'block';
+        const res = await fetch(`${API_URL}?action=list`);
+        const data = await res.json();
+        
+        if (data.error) throw new Error("Auth");
 
-        try {
-            const res = await fetch(`${API_URL}?action=list`);
-            
-            // Si la respuesta no es JSON o falla (Google nos bloquea)
-            if (!res.ok) throw new Error("Auth");
-
-            const data = await res.json();
-            document.getElementById('user-account').innerText = "Cuenta: " + data.email;
-            datosLocales = data.lista || [];
-            renderizarLista();
-            btn.innerText = "ACTUALIZAR LISTA";
-            
-        } catch (e) {
-            // Si falla, es que el usuario necesita identificarse en una ventana real
-            if(confirm("Google necesita que autorices el acceso a tus correos. ¿Abrir ventana de conexión?")) {
-                const authWin = window.open(API_URL, '_blank');
-                const timer = setInterval(() => {
-                    if (authWin.closed) {
-                        clearInterval(timer);
-                        location.reload(); // Recarga la app para intentar de nuevo con sesión
-                    }
-                }, 1000);
-            }
-        } finally {
-            loader.style.display = 'none';
-            btn.disabled = false;
-        }
+        document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+        renderizarLista(data.lista);
+        loader.style.display = 'none';
+        
+    } catch (e) {
+        loader.style.display = 'none';
+        // Si falla, mostramos el aviso profesional antes del pop-up
+        abrirModal('modal-auth-info');
     }
+}
+
+function lanzarLogin() {
+    cerrarModal('modal-auth-info');
+    
+    const width = 500, height = 650;
+    const left = (window.innerWidth / 2) - (width / 2);
+    const top = (window.innerHeight / 2) - (height / 2);
+    
+    authWin = window.open(API_URL, 'GoogleAuth', `width=${width},height=${height},top=${top},left=${left}`);
+
+    // Verificamos cuando se cierra
+    const timer = setInterval(() => {
+        if (authWin.closed) {
+            clearInterval(timer);
+            // Re-intentamos escanear automáticamente al cerrar la ventana
+            escanear();
+        }
+    }, 600);
+}
+
+function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+
+async function verificarYRefrescar() {
+    const loader = document.getElementById('loading-overlay');
+    loader.style.display = 'block';
+    
+    // Re-intentamos el fetch silenciosamente
+    try {
+        const res = await fetch(`${API_URL}?action=list`);
+        const data = await res.json();
+        if(data.email) {
+            document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+            renderizarLista(data.lista);
+        }
+    } catch(e) {
+        alert("Aún no has autorizado la cuenta. Inténtalo de nuevo.");
+    } finally {
+        loader.style.display = 'none';
+    }
+}
     function renderizarLista() {
         const contenedor = document.getElementById('lista');
         if (datosLocales.length === 0) {
@@ -236,7 +268,19 @@
     function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
     function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
-
+<div id="modal-auth-info" class="modal">
+    <div class="modal-content" style="max-width: 320px; text-align: center;">
+        <div class="modal-body" style="padding: 30px;">
+            <div style="font-size: 40px; margin-bottom: 15px;">🛡️</div>
+            <h3 style="margin-top: 0;">Conexión Segura</h3>
+            <p style="font-size: 0.9rem; color: #5f6368;">Para escanear tus correos, vamos a conectar con tu cuenta de Google de forma oficial.</p>
+            <p style="font-size: 0.8rem; background: #f1f3f4; padding: 10px; border-radius: 8px;">Deberás seleccionar tu cuenta y aceptar los permisos en la siguiente ventana.</p>
+        </div>
+        <div class="modal-footer" style="padding: 15px; background: #f8f9fa;">
+            <button class="btn-modal" style="background:var(--primary); color:white;" onclick="lanzarLogin()">ENTENDIDO, CONECTAR</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 
