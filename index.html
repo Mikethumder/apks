@@ -2,77 +2,81 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>LimpiaGmail Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LimpiaGmail</title>
     <style>
-        body { text-align: center; font-family: sans-serif; background: #f0f2f5; padding-top: 100px; margin: 0; }
-        .btn {
-            background: #d93025;
-            color: white;
-            padding: 25px 50px;
-            font-size: 20px;
-            font-weight: bold;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer !important;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            /* Esto obliga al botón a estar por encima de todo */
-            position: relative;
-            z-index: 9999; 
+        body { text-align: center; font-family: sans-serif; background: #f0f2f5; margin: 0; padding-top: 80px; }
+        .header { background: #d93025; color: white; padding: 20px; position: fixed; top: 0; width: 100%; }
+        .btn { 
+            background: #d93025; color: white; padding: 20px 40px; font-size: 18px; 
+            border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-top: 40px;
         }
-        .btn:hover { background: #b31412; }
     </style>
 </head>
 <body>
-    <h1>LimpiaGmail Pro</h1>
-    <p id="msg">Pulsa el botón para empezar</p>
-    
-    <button class="btn" onclick="conectar()">CONECTAR MI GMAIL</button>
 
-    <script>
-        var URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+<div class="header"><h2>LimpiaGmail Pro</h2></div>
 
-        function conectar() {
-            var win = window.open(URL_SCRIPT, "_blank");
-            document.getElementById('msg').innerText = "Esperando autorización...";
-            
-            var timer = setInterval(function() {
-                if (!win || win.closed) {
-                    clearInterval(timer);
-                    location.reload();
-                }
-            }, 1000);
-        }
-    </script>
-    <script>
+<p id="status">Estado: Verificando cuenta...</p>
+<button class="btn" id="btn-accion" onclick="iniciar()">CONECTAR GMAIL</button>
+
+<div id="lista" style="padding: 20px; text-align: left; max-width: 500px; margin: auto;"></div>
+
+<script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
-    async function verificar() {
-        // Miramos si venimos de la redirección de Google
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('login') === 'success') {
-            console.log("Login detectado por URL");
-        }
-
+    // 1. Al cargar la página
+    window.onload = async function() {
         try {
             const res = await fetch(API_URL + "?action=list&t=" + Date.now());
             const data = await res.json();
+            
             if (data.email && data.email !== "No identificado") {
-                document.getElementById('user-account').innerText = "Cuenta: " + data.email;
-                document.getElementById('btn-login').innerText = "BUSCAR SUSCRIPCIONES";
-                // Si ya estamos logueados, lanzamos el escaneo automáticamente
-                escanearCorreos(); 
+                document.getElementById('status').innerText = "Conectado como: " + data.email;
+                document.getElementById('btn-accion').innerText = "BUSCAR SUSCRIPCIONES";
+                document.getElementById('btn-accion').onclick = buscar;
+                
+                // Si acabamos de volver del login, buscamos automático
+                const params = new URLSearchParams(window.location.search);
+                if(params.get('login') === 'success') buscar();
+                
+            } else {
+                document.getElementById('status').innerText = "Estado: Desconectado";
             }
         } catch(e) {
-            console.log("Aún sin sesión");
+            document.getElementById('status').innerText = "Listo para conectar";
         }
-    }
-
-    // El botón ahora abre Google en la MISMA pestaña para evitar líos de ventanas
-    document.getElementById('btn-login').onclick = function() {
-        window.location.href = API_URL;
     };
 
-    window.onload = verificar;
+    // 2. Ir a Google (en la misma pestaña)
+    function iniciar() {
+        window.location.href = API_URL;
+    }
+
+    // 3. Buscar correos
+    async function buscar() {
+        document.getElementById('status').innerText = "Escaneando correos...";
+        try {
+            const res = await fetch(API_URL + "?action=list&t=" + Date.now());
+            const data = await res.json();
+            render(data.lista);
+        } catch(e) { alert("Error al buscar"); }
+    }
+
+    function render(lista) {
+        let html = '';
+        if(!lista || lista.length === 0) { html = "No se encontraron correos."; }
+        else {
+            lista.forEach(item => {
+                html += `<div style="background:white; pading:15px; margin-bottom:10px; border-radius:8px; border-left:5px solid red; padding:10px;">
+                    <b>${item.remitente}</b><br><small>${item.asunto}</small>
+                </div>`;
+            });
+        }
+        document.getElementById('lista').innerHTML = html;
+        document.getElementById('status').innerText = "Escaneo completado";
+    }
 </script>
 </body>
 </html>
