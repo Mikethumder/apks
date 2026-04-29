@@ -187,18 +187,17 @@ function ejecutarBorradoMasivo(id, email) {
 function verTodos(email) {
     if(!email) return alert("Email no disponible");
     
-    // Codificamos el email para evitar problemas con caracteres especiales
-    const q = encodeURIComponent("from:" + email);
+    const query = "from:" + email;
     
-    // Esta URL es la más compatible:
-    // En PC abre la pestaña de búsqueda.
-    // En Móvil intenta abrir la App de Gmail directamente con el filtro aplicado.
-    const url = "https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1#search/" + q;
+    // 1. Intentamos la URL de búsqueda directa (La más compatible con Apps)
+    const urlBusqueda = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query);
     
-    // Si la anterior fallara en algún modelo específico, esta es la alternativa "pura":
-    const urlAlternativa = "https://mail.google.com/mail/u/0/#search/" + q;
-
-    window.open(urlAlternativa, '_blank');
+    // 2. Si estás en móvil, a veces es mejor abrirla en la misma pestaña para que el SO la capture
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = urlBusqueda;
+    } else {
+        window.open(urlBusqueda, '_blank');
+    }
 }
         
 function ejecutar(id, accion) {
