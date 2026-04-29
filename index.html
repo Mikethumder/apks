@@ -70,13 +70,20 @@ const guia = document.getElementById('guia-container');
 // --- 1. DETECCIÓN AUTOMÁTICA AL CARGAR ---
 window.onload = function() {
     const params = new URLSearchParams(window.location.search);
-    // Si venimos de Google con éxito
+    
+    // 1. Si venimos con datos en la URL (Solución Incógnito)
+    if (params.get('data')) {
+        const datosRaw = decodeURIComponent(params.get('data'));
+        const lista = JSON.parse(atob(datosRaw));
+        renderizar({lista: lista, email: "Conectado"});
+        return;
+    }
+
+    // 2. Si venimos de login exitoso, pedimos la lista por redirección
     if (params.get('login') === 'success') {
-        status.innerText = "Conexión confirmada. Cargando...";
-        pedirLista();
+        window.location.href = API_URL + "?action=list"; // Redirigimos a Google para que nos devuelva la data
     } else {
         btn.style.display = 'block';
-        status.innerText = "Listo para limpiar tu Gmail";
     }
 };
 
@@ -185,23 +192,9 @@ function ejecutarBorradoMasivo(id, email) {
 }
 
 function verTodos(email) {
-    if(!email) return;
-    
-    // Este formato es un "Universal Link". 
-    // Intenta abrir la App de Gmail directamente con la búsqueda puesta.
-    const query = "from:" + email;
-    const url = "googlegmail:///search?query=" + encodeURIComponent(query);
-    
-    // Si no tiene la App de Gmail, usamos el enlace web de respaldo
-    const backupUrl = "https://mail.google.com/mail/u/0/?view=tl&search=query&q=" + encodeURIComponent(query);
-
-    // Intentamos abrir el protocolo de la App
-    window.location.href = url;
-
-    // Si en 500ms no ha pasado nada (no tiene la app), saltamos a la web
-    setTimeout(() => {
-        window.location.href = backupUrl;
-    }, 500);
+    // La URL más sencilla es la que menos rompe el móvil
+    const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent("from:" + email);
+    window.location.href = url; // En la misma ventana para que el móvil salte a la App
 }
 
 // --- CAMBIO PARA QUE LA LISTA CARGUE EN MÓVIL ---
