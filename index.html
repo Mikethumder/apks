@@ -146,17 +146,33 @@ function ejecutarBorradoMasivo(id, email) {
     const card = document.getElementById('card-' + id);
     card.style.opacity = "0.3";
     card.style.pointerEvents = "none";
+    card.style.background = "#fff0f0";
     
+    // Creamos un identificador único para esta petición
     const cb = "cb_" + Math.floor(Math.random() * 1000000);
-    window[cb] = function(res) {
-        if (res.status === "ok") {
-            card.style.transition = "all 0.4s";
-            card.style.transform = "scale(0)";
-            setTimeout(() => card.remove(), 400);
-        } else {
+    
+    // Configuramos un temporizador: si en 8 segundos no hay respuesta, desbloqueamos
+    const timeout = setTimeout(() => {
+        if (window[cb]) {
+            alert("Google está tardando en borrar tantos correos. Revisa tu Gmail en un momento.");
             card.style.opacity = "1";
             card.style.pointerEvents = "all";
-            alert("Error al borrar.");
+            card.style.background = "white";
+            delete window[cb];
+        }
+    }, 8000);
+
+    window[cb] = function(res) {
+        clearTimeout(timeout); // Cancelamos el temporizador porque Google ha respondido
+        if (res.status === "ok") {
+            card.style.transition = "all 0.5s ease";
+            card.style.transform = "translateX(150%)";
+            setTimeout(() => card.remove(), 500);
+        } else {
+            alert("Error: " + (res.msg || "No se pudo borrar"));
+            card.style.opacity = "1";
+            card.style.background = "white";
+            card.style.pointerEvents = "all";
         }
         delete window[cb];
     };
