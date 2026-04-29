@@ -117,19 +117,29 @@ canalAuth.onmessage = (event) => {
 // Modifica también la función abrirVentanaLogin para que sea más robusta
 function abrirVentanaLogin() {
     document.getElementById('modal-auth-info').style.display = 'none';
+    
+    // Limpiamos marcas antiguas
+    localStorage.removeItem('gmail_login_status');
+
     const w = 500, h = 650;
     const left = (screen.width/2)-(w/2), top = (screen.height/2)-(h/2);
-    
-    // Abrimos la ventana
     winAuth = window.open(API_URL, 'GoogleAuth', `width=${w},height=${h},top=${top},left=${left}`);
 
-    // Si el usuario cierra la ventana a mano (la X), también refrescamos
-    const timer = setInterval(() => {
-        if (!winAuth || winAuth.closed) {
-            clearInterval(timer);
-            verificarSesion().then(() => { if(estaAutorizado) ejecutarEscaneo(); });
+    // VIGILANTE DE MEMORIA (El puente más seguro)
+    const monitor = setInterval(() => {
+        if (localStorage.getItem('gmail_login_status') === 'success') {
+            clearInterval(monitor);
+            if (winAuth) winAuth.close();
+            localStorage.removeItem('gmail_login_status'); // Limpiamos para la próxima
+            location.reload(); // Recarga total para activar la sesión
         }
-    }, 1000);
+        
+        // Si el usuario cierra la ventana sin éxito (clic en la X)
+        if (winAuth && winAuth.closed) {
+            clearInterval(monitor);
+            verificarSesion(); 
+        }
+    }, 500);
 }
     // 1. Al cargar, verificar si ya hay sesión
     window.onload = verificarSesion;
