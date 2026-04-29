@@ -110,42 +110,53 @@
     };
 
     // 4. ESCANEAR CORREOS
-    async function ejecutarEscaneo() {
-        loader.style.display = 'block';
-        listaDiv.innerHTML = '';
-        statusTxt.innerText = "Analizando tu bandeja de entrada...";
-        btnAccion.disabled = true;
-
-        try {
-            const res = await fetch(`${API_URL}?action=list&t=${Date.now()}`);
-            const data = await res.json();
-            
-            loader.style.display = 'none';
-            btnAccion.disabled = false;
-
-            if (data.lista && data.lista.length > 0) {
-                prepararInterfazLogueado(data.email);
-                let html = "";
-                data.lista.forEach(item => {
-                    html += `
-                        <div class="correo-card">
-                            <b>${item.remitente}</b>
-                            <span>${item.asunto}</span>
-                        </div>`;
-                });
-                listaDiv.innerHTML = html;
-                statusTxt.innerText = `Se han encontrado ${data.lista.length} suscripciones.`;
-            } else {
-                listaDiv.innerHTML = "<p>No se encontraron correos de suscripción.</p>";
-                statusTxt.innerText = "Escaneo finalizado.";
-            }
-        } catch (e) {
-            loader.style.display = 'none';
-            btnAccion.disabled = false;
-            statusTxt.innerText = "Error al obtener datos. Reintenta.";
-            console.error(e);
+   function ejecutarEscaneo() {
+    loader.style.display = 'block';
+    listaDiv.innerHTML = '';
+    statusTxt.innerText = "Cargando datos desde Google...";
+    
+    // Creamos un nombre de función temporal
+    const nombreCallback = 'callback_' + Math.floor(Math.random() * 1000000);
+    
+    // Definimos qué hacer cuando lleguen los datos
+    window[nombreCallback] = function(data) {
+        loader.style.display = 'none';
+        if (data.lista) {
+            renderizarLista(data);
+        } else {
+            statusTxt.innerText = "Error: " + (data.error || "No hay datos");
         }
+        // Limpiamos el script
+        delete window[nombreCallback];
+    };
+
+    // Creamos el "túnel" de datos
+    const script = document.createElement('script');
+    script.src = `${API_URL}?action=list&callback=${nombreCallback}&t=${Date.now()}`;
+    document.body.appendChild(script);
+}
+
+function renderizarLista(data) {
+    userAcc.innerText = "Cuenta: " + data.email;
+    btnAccion.innerText = "RESCANEAR";
+    btnAccion.classList.add('btn-success');
+    
+    if (data.lista.length === 0) {
+        statusTxt.innerText = "No se encontraron suscripciones.";
+        return;
     }
+
+    let html = "";
+    data.lista.forEach(item => {
+        html += `
+            <div class="correo-card">
+                <b>${item.remitente}</b>
+                <span>${item.asunto}</span>
+            </div>`;
+    });
+    listaDiv.innerHTML = html;
+    statusTxt.innerText = `Éxito: ${data.lista.length} correos detectados.`;
+}
 </script>
 
 </body>
