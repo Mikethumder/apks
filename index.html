@@ -77,6 +77,12 @@
         document.getElementById('lista').innerHTML = html;
         document.getElementById('status').innerText = "Escaneo completado";
     }
+    
+    function iniciar() {
+    // Usamos _self para que NO abra ventanas nuevas
+    window.open(API_URL, "_self");
+    }
 </script>
+    
 </body>
 </html>
