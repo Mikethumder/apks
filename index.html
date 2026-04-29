@@ -130,31 +130,46 @@
     let datosLocales = [];
     let idTemporal = "";
 
-    async function escanear() {
-        const btn = document.getElementById('btn-scan');
-        const loader = document.getElementById('loading-overlay');
-        const listaDiv = document.getElementById('lista');
+   async function escanear() {
+    const btn = document.getElementById('btn-scan');
+    const loader = document.getElementById('loading-overlay');
+    
+    btn.disabled = true;
+    loader.style.display = 'block';
 
-        btn.disabled = true;
-        btn.innerText = "ESCANEANDO...";
-        loader.style.display = 'block';
-        listaDiv.innerHTML = '';
+    try {
+        const res = await fetch(`${API_URL}?action=list`);
+        
+        // Si Google nos redirige a una página de login (lo que causa error de CORS)
+        // o si el script nos dice que falta login:
+        if (!res.ok || res.type === 'opaque') throw new Error("AuthRequired");
 
-        try {
-            const res = await fetch(`${API_URL}?action=list`);
-            const data = await res.json();
-            
-            if(data.email) document.getElementById('user-account').innerText = "Cuenta: " + data.email;
-            datosLocales = data.lista || [];
-            renderizarLista();
-        } catch (e) {
-            alert("Error de conexión. Verifica que el Script esté publicado correctamente.");
-        } finally {
-            loader.style.display = 'none';
-            btn.disabled = false;
-            btn.innerText = "BUSCAR SUSCRIPCIONES";
-        }
+        const data = await res.json();
+        document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+        datosLocales = data.lista || [];
+        renderizarLista();
+        
+    } catch (e) {
+        // DISPARADOR AUTOMÁTICO:
+        // Si falla, abrimos la URL del script en una ventana pequeña
+        // Esto obligará a Google a pedir el login/permisos al usuario.
+        const authWindow = window.open(API_URL, '_blank', 'width=500,height=600');
+        
+        alert("Por favor, selecciona tu cuenta y acepta los permisos en la ventana emergente para continuar.");
+        
+        // Verificamos cada segundo si la ventana se cerró para re-intentar
+        const timer = setInterval(() => {
+            if (authWindow.closed) {
+                clearInterval(timer);
+                escanear(); // Re-intento automático tras autorizar
+            }
+        }, 1000);
+        
+    } finally {
+        loader.style.display = 'none';
+        btn.disabled = false;
     }
+}
 
     function renderizarLista() {
         const contenedor = document.getElementById('lista');
