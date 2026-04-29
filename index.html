@@ -134,16 +134,27 @@
     }
 
     async function visualizar(id) {
-        abrirModal('modal-view');
-        document.getElementById('view-body').innerText = "Abriendo mensaje...";
+    abrirModal('modal-view');
+    const viewBody = document.getElementById('view-body');
+    viewBody.innerText = "Abriendo mensaje...";
+    
+    try {
         const res = await fetch(`${API_URL}?action=getContent&id=${id}`);
         const data = await res.json();
         
-        // Actualizamos el selector de cuenta con el email real que devolvió el script
-        if(data.emailActivo) document.getElementById('cuenta').options[0].text = data.emailActivo;
-        
-        document.getElementById('view-body').innerText = data.cuerpo || "El mensaje no tiene contenido de texto.";
+        if (data.error) {
+            viewBody.innerText = "Error del servidor: " + data.error;
+        } else {
+            // Actualizamos el email en el selector
+            if(data.emailActivo) {
+                document.getElementById('cuenta').options[0].text = data.emailActivo;
+            }
+            viewBody.innerText = data.cuerpo || "Mensaje sin texto legible.";
+        }
+    } catch (e) {
+        viewBody.innerText = "Error de red: No se pudo conectar con el script.";
     }
+}
 
     async function ejecutarBorrado() {
         const idActual = idParaBorrar; // Guardamos el ID antes de cerrar
