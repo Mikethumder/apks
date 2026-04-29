@@ -82,43 +82,35 @@
 <script>
     // REEMPLAZA ESTA URL CON LA TUYA
     const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
-    let idParaBorrar = "";
+    
+    let datosLocales = []; // Guardamos la lista aquí
 
     async function escanear() {
         document.getElementById('loading').style.display = 'block';
-        document.getElementById('lista').innerHTML = '';
-        
         try {
             const res = await fetch(`${API_URL}?action=list`);
-            const datos = await res.json();
-            renderizarLista(datos);
-        } catch (e) {
-            alert("Error al conectar con Gmail. Revisa los permisos.");
-        } finally {
-            document.getElementById('loading').style.display = 'none';
-        }
+            datosLocales = await res.json();
+            renderizarLista();
+        } catch (e) { alert("Error de conexión"); }
+        document.getElementById('loading').style.display = 'none';
     }
 
-    function renderizarLista(datos) {
+    function renderizarLista() {
         const contenedor = document.getElementById('lista');
-        if (datos.length === 0) {
-            contenedor.innerHTML = '<p style="text-align:center">No se encontraron suscripciones.</p>';
-            return;
-        }
-
-        datos.forEach(item => {
-            const nombreLimpio = item.remitente.split('<')[0].replace(/"/g, '');
+        contenedor.innerHTML = '';
+        datosLocales.forEach((item, index) => {
+            // Creamos un ID único para la tarjeta en el HTML
             contenedor.innerHTML += `
-                <div class="card">
+                <div class="card" id="card-${item.id}">
                     <div class="card-header">
-                        <span class="sender">${nombreLimpio}</span>
-                        <span class="count-badge">${item.conteo} correos</span>
+                        <span class="sender">${item.remitente.split('<')[0]}</span>
+                        <span class="count-badge">${item.conteo}</span>
                     </div>
                     <div class="subject">${item.asunto}</div>
                     <div class="actions">
-                        <button class="btn-action" onclick="visualizar('${item.id}')">Visualizar</button>
+                        <button class="btn-action" onclick="visualizar('${item.id}')">Ver</button>
                         <button class="btn-action" onclick="confirmarBorrado('${item.id}', ${item.conteo})">Borrar</button>
-                        <button class="btn-action" onclick="darseDeBaja('${item.enlaceBaja}')" ${!item.enlaceBaja ? 'disabled style="opacity:0.5"' : ''}>Darse de baja</button>
+                        <button class="btn-action" onclick="darseDeBaja('${item.enlaceBaja}')">Baja</button>
                     </div>
                 </div>
             `;
@@ -127,37 +119,36 @@
 
     async function visualizar(id) {
         abrirModal('modal-view');
-        document.getElementById('view-body').innerText = "Cargando contenido...";
+        document.getElementById('view-body').innerText = "Abriendo mensaje...";
         const res = await fetch(`${API_URL}?action=getContent&id=${id}`);
         const data = await res.json();
-        document.getElementById('view-body').innerText = data.cuerpo;
-    }
-
-    function darseDeBaja(url) {
-        if (url) {
-            window.open(url, '_blank');
-        } else {
-            alert("No se encontró enlace automático de baja.");
-        }
-    }
-
-    function confirmarBorrado(id, total) {
-        idParaBorrar = id;
-        document.getElementById('confirm-text').innerText = `¿Enviar ${total} correos a la papelera?`;
-        abrirModal('modal-confirm');
-        document.getElementById('btn-ejecutar-borrado').onclick = ejecutarBorrado;
+        
+        // Actualizamos el selector de cuenta con el email real que devolvió el script
+        if(data.emailActivo) document.getElementById('cuenta').options[0].text = data.emailActivo;
+        
+        document.getElementById('view-body').innerText = data.cuerpo || "El mensaje no tiene contenido de texto.";
     }
 
     async function ejecutarBorrado() {
+        const idActual = idParaBorrar; // Guardamos el ID antes de cerrar
         cerrarModal('modal-confirm');
-        document.getElementById('loading').style.display = 'block';
-        await fetch(`${API_URL}?action=delete&ids=${idParaBorrar}`);
-        escanear(); // Refresca la lista
+        
+        // 1. ELIMINACIÓN VISUAL INMEDIATA (Sin esperar al servidor)
+        const elemento = document.getElementById(`card-${idActual}`);
+        if (elemento) {
+            elemento.style.transition = "0.5s";
+            elemento.style.opacity = "0";
+            setTimeout(() => elemento.remove(), 500);
+        }
+
+        // 2. ORDEN AL SERVIDOR (En segundo plano)
+        fetch(`${API_URL}?action=delete&ids=${idActual}`);
+        
+        // Eliminamos de nuestros datos locales para que no reaparezca
+        datosLocales = datosLocales.filter(item => item.id !== idActual);
     }
-
-    function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-
 </script>
+
+ 
 </body>
 </html>
