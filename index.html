@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LimpiaGmail Pro</title>
+    <style>
+        :root { --primary: #d93025; --secondary: #5f6368; --bg: #f1f3f4; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: #3c4043; }
+        
+        /* Cabecera */
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .header h2 { margin: 0; font-size: 1.2rem; }
+        
+        /* Selector y Botones principales */
+        .controls { padding: 15px; background: white; margin-bottom: 10px; }
+        select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; }
+        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        
+        /* Listado de suscripciones */
+        .container { padding: 10px; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 5px solid var(--primary); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .sender { font-weight: bold; color: #202124; font-size: 1rem; }
+        .count-badge { background: #feebeb; color: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
+        .subject { font-size: 0.9rem; color: var(--secondary); margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Botones de acción */
+        .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .btn-action { padding: 8px 4px; border-radius: 4px; border: 1px solid #dadce0; background: white; font-size: 0.75rem; cursor: pointer; color: #3c4043; }
+        .btn-action:active { background: #f8f9fa; }
+
+        /* Modal de Visualización y Confirmación */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-height: 80%; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-body { padding: 20px; overflow-y: auto; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; }
+        .modal-footer { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .btn-close { flex: 1; padding: 12px; background: #5f6368; color: white; border: none; border-radius: 6px; font-weight: bold; }
+        .btn-confirm { flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; }
+
+        #loading { text-align: center; padding: 40px; display: none; color: var(--secondary); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>LimpiaGmail Pro</h2>
+</div>
+
+<div class="controls">
+    <label style="font-size: 0.8rem; color: #666;">Cuenta activa:</label>
+    <select id="cuenta">
+        <option>Principal (Google Auth)</option>
+    </select>
+    <button class="btn-main" onclick="escanear()">BUSCAR SUSCRIPCIONES</button>
+</div>
+
+<div class="container">
+    <div id="loading">Escaneando tu bandeja de entrada...</div>
+    <div id="lista"></div>
+</div>
+
+<div id="modal-view" class="modal">
+    <div class="modal-content">
+        <div id="view-body" class="modal-body">Cargando mensaje...</div>
+        <div class="modal-footer">
+            <button class="btn-close" onclick="cerrarModal('modal-view')">VOLVER AL LISTADO</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-confirm" class="modal">
+    <div class="modal-content" style="max-width: 300px;">
+        <div class="modal-body" id="confirm-text" style="text-align: center;"></div>
+        <div class="modal-footer">
+            <button class="btn-confirm" id="btn-ejecutar-borrado">SÍ, BORRAR</button>
+            <button class="btn-close" onclick="cerrarModal('modal-confirm')">NO</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // REEMPLAZA ESTA URL CON LA TUYA
+    const API_URL = "TU_URL_DE_APPS_SCRIPT";
+    let idParaBorrar = "";
+
+    async function escanear() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('lista').innerHTML = '';
+        
+        try {
+            const res = await fetch(`${API_URL}?action=list`);
+            const datos = await res.json();
+            renderizarLista(datos);
+        } catch (e) {
+            alert("Error al conectar con Gmail. Revisa los permisos.");
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    function renderizarLista(datos) {
+        const contenedor = document.getElementById('lista');
+        if (datos.length === 0) {
+            contenedor.innerHTML = '<p style="text-align:center">No se encontraron suscripciones.</p>';
+            return;
+        }
+
+        datos.forEach(item => {
+            const nombreLimpio = item.remitente.split('<')[0].replace(/"/g, '');
+            contenedor.innerHTML += `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="sender">${nombreLimpio}</span>
+                        <span class="count-badge">${item.conteo} correos</span>
+                    </div>
+                    <div class="subject">${item.asunto}</div>
+                    <div class="actions">
+                        <button class="btn-action" onclick="visualizar('${item.id}')">Visualizar</button>
+                        <button class="btn-action" onclick="confirmarBorrado('${item.id}', ${item.conteo})">Borrar</button>
+                        <button class="btn-action" onclick="darseDeBaja('${item.enlaceBaja}')" ${!item.enlaceBaja ? 'disabled style="opacity:0.5"' : ''}>Darse de baja</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    async function visualizar(id) {
+        abrirModal('modal-view');
+        document.getElementById('view-body').innerText = "Cargando contenido...";
+        const res = await fetch(`${API_URL}?action=getContent&id=${id}`);
+        const data = await res.json();
+        document.getElementById('view-body').innerText = data.cuerpo;
+    }
+
+    function darseDeBaja(url) {
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert("No se encontró enlace automático de baja.");
+        }
+    }
+
+    function confirmarBorrado(id, total) {
+        idParaBorrar = id;
+        document.getElementById('confirm-text').innerText = `¿Enviar ${total} correos a la papelera?`;
+        abrirModal('modal-confirm');
+        document.getElementById('btn-ejecutar-borrado').onclick = ejecutarBorrado;
+    }
+
+    async function ejecutarBorrado() {
+        cerrarModal('modal-confirm');
+        document.getElementById('loading').style.display = 'block';
+        await fetch(`${API_URL}?action=delete&ids=${idParaBorrar}`);
+        escanear(); // Refresca la lista
+    }
+
+    function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+
+</script>
+</body>
+</html>
