@@ -94,7 +94,7 @@
         }
 
         // --- 4. MOSTRAR CORREOS ---
-       function renderizar(data) {
+      function renderizar(data) {
     userMail.innerText = data.email;
     btn.innerText = "REFRESCAR LISTA";
     btn.className = "btn btn-scan";
@@ -103,22 +103,33 @@
     let html = "";
     data.lista.forEach(item => {
         html += `
-        <div class="card" id="card-${item.id}" style="border-left: 8px solid ${item.tipo === 'SPAM' ? '#555' : '#d93025'}; padding: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div style="flex: 1;">
-                    <b style="font-size: 1.1rem; color: #1a73e8;">${item.remitente}</b>
-                    <div style="color: #666; margin: 5px 0;">${item.asunto}</div>
-                    <span style="background: #eee; padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;">
-                        ${item.conteo} correos detectados
-                    </span>
+        <div class="card" id="card-${item.id}" style="border-left: 8px solid ${item.tipo === 'SPAM' ? '#555' : '#d93025'}; padding: 20px; margin-bottom: 15px;">
+            <div style="text-align: left; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <b style="font-size: 1.2rem; color: #1a73e8;">${item.remitente}</b>
+                    <span style="font-size: 10px; color: white; background: #555; padding: 2px 6px; border-radius: 4px;">${item.tipo}</span>
                 </div>
-                <span style="font-size: 10px; color: white; background: #555; padding: 2px 6px; border-radius: 4px;">${item.tipo}</span>
+                <div style="color: #666; font-size: 0.9rem; margin: 5px 0;">${item.asunto}</div>
+                <div style="display: inline-block; background: #feefee; color: #d93025; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-top: 5px;">
+                    ${item.conteo} correos de este sitio
+                </div>
             </div>
 
-            <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                <button onclick="ver('${item.id}')" style="background:#f1f3f4; color:#3c4043; border:1px solid #dadce0; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Ver</button>
-                <button onclick="ejecutar('${item.id}', 'delete')" style="background:#feefee; color:#d93025; border:1px solid #f5c2c7; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Borrar</button>
-                <button onclick="ejecutar('${item.id}', 'unsubscribe')" style="background:#e6f4ea; color:#1e8e3e; border:1px solid #ceead6; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold;">Baja</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <button onclick="ver('${item.id}')" 
+                    style="background:#fff; color:#3c4043; border:1px solid #dadce0; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                    Ver
+                </button>
+                
+                <button onclick="ejecutar('${item.id}', 'delete')" 
+                    style="background:#d93025; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                    Borrar
+                </button>
+                
+                <button onclick="ejecutar('${item.id}', 'unsubscribe')" 
+                    style="background:#0b8043; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                    Baja
+                </button>
             </div>
         </div>`;
     });
