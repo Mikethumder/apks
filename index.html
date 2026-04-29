@@ -185,10 +185,20 @@ function ejecutarBorradoMasivo(id, email) {
 }
 
 function verTodos(email) {
-    if(!email) return;
-    // La URL de búsqueda más infalible de Gmail
-    const url = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
-    window.open(url, '_blank');
+    if(!email) return alert("Email no disponible");
+    
+    // Codificamos el email para evitar problemas con caracteres especiales
+    const q = encodeURIComponent("from:" + email);
+    
+    // Esta URL es la más compatible:
+    // En PC abre la pestaña de búsqueda.
+    // En Móvil intenta abrir la App de Gmail directamente con el filtro aplicado.
+    const url = "https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1#search/" + q;
+    
+    // Si la anterior fallara en algún modelo específico, esta es la alternativa "pura":
+    const urlAlternativa = "https://mail.google.com/mail/u/0/#search/" + q;
+
+    window.open(urlAlternativa, '_blank');
 }
         
 function ejecutar(id, accion) {
