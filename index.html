@@ -223,6 +223,33 @@ function abrirVentanaLogin() {
         });
         contenedor.innerHTML = html;
     }
+
+    // Escucha global para el canal de autenticación
+const bc = new BroadcastChannel('limpiagmail_auth');
+bc.onmessage = (event) => {
+    if (event.data === 'refresh') {
+        location.reload(true); // Forzamos recarga desde el servidor, no cache
+    }
+};
+
+async function verificarSesion() {
+    try {
+        // Añadimos un timestamp para que el navegador no use datos viejos
+        const res = await fetch(`${API_URL}?action=list&cachebuster=${Date.now()}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        if (data.email && data.email !== "No identificado") {
+            document.getElementById('user-account').innerText = "Cuenta: " + data.email;
+            document.getElementById('btn-scan').innerText = "BUSCAR SUSCRIPCIONES";
+            estaAutorizado = true;
+            return true;
+        }
+    } catch (e) {
+        estaAutorizado = false;
+        return false;
+    }
+}
 </script>
 </body>
 </html>
