@@ -1,7 +1,7 @@
 {
   "name": "LimpiaGmail Pro",
   "short_name": "LimpiaGmail",
-  "start_url": "index.html",
+  "start_url": ".index.html",
   "display": "standalone",
   "background_color": "#d93025",
   "theme_color": "#d93025",
