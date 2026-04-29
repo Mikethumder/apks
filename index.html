@@ -2,44 +2,60 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>LimpiaGmail Pro</title>
     <style>
-        :root { --red: #d93025; --green: #0b8043; }
-        body { font-family: sans-serif; text-align: center; background: #f1f3f4; margin: 0; padding: 20px; }
-        .header { background: var(--red); color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -20px -20px 20px -20px; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 5px solid var(--red); }
-        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-bottom: 10px; color: white; }
+        :root { --red: #d93025; --green: #0b8043; --blue: #1a73e8; --bg: #f1f3f4; }
+        body { font-family: -apple-system, sans-serif; text-align: center; background: var(--bg); margin: 0; padding: 20px; color: #3c4043; }
+        
+        .header { background: var(--red); color: white; padding: 40px 20px; border-radius: 0 0 24px 24px; margin: -20px -20px 20px -20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header h1 { margin: 0; font-size: 1.8rem; }
+        #user-mail { font-size: 0.9rem; opacity: 0.9; margin-top: 8px; }
+
+        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; transition: all 0.2s; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         .btn-connect { background: var(--red); }
         .btn-scan { background: var(--green); }
-        #status { font-size: 14px; color: #666; margin: 10px 0; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--red); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display: none; }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        #status { font-size: 14px; margin: 15px 0; font-weight: 500; min-height: 20px; }
+        
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--red); border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; margin: 15px auto; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Tarjetas */
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 8px solid var(--red); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .remitente { font-size: 1.15rem; color: var(--blue); font-weight: bold; display: block; }
+        .badge-conteo { display: inline-block; background: #feefee; color: var(--red); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-top: 8px; }
+        
+        .grid-botones { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn-action { padding: 12px 5px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; border: 1px solid transparent; }
+        .btn-ver { background: #fff; color: #3c4043; border-color: #dadce0; }
+        .btn-borrar { background: var(--red); color: white; }
+        .btn-baja { background: var(--green); color: white; }
+
+        .guia { font-size: 12px; color: #70757a; background: #fff; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px dashed #ccc; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>LimpiaGmail</h1>
-        <div id="user-mail">Desconectado</div>
+        <h1>LimpiaGmail Pro</h1>
+        <div id="user-mail">Detectando sesión...</div>
     </div>
 
-    <div id="status">Cargando aplicación...</div>
+    <div id="status">Esperando conexión...</div>
     <div id="loader" class="loader"></div>
     
     <button id="btn-main" class="btn btn-connect">CONECTAR GMAIL</button>
-    <div id="guia-permisos" style="margin-top:20px; font-size:13px; color:#666; background:#fff; padding:15px; border-radius:10px; border:1px dashed #ccc; display:block;">
-    <p><b>Nota sobre seguridad:</b> Al ser una app privada, verás un aviso de Google.</p>
-    <ol style="text-align:left;">
-        <li>Pulsa en <b>"Configuración avanzada"</b>.</li>
-        <li>Haz clic en <b>"Ir a LimpiaGmail (no seguro)"</b> abajo del todo.</li>
-        <li>Concede los permisos para que la App pueda gestionar tus correos basura.</li>
-    </ol>
-</div>
+    
     <div id="lista"></div>
 
+    <div id="guia-container" class="guia">
+        <b>¿Primera vez?</b> Pulsa Conectar, luego en "Configuración avanzada" e "Ir a LimpiaGmail (no seguro)".
+    </div>
+
     <script>
-        // --- CONFIGURACIÓN ---
         const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
         const btn = document.getElementById('btn-main');
@@ -47,130 +63,110 @@
         const userMail = document.getElementById('user-mail');
         const listaDiv = document.getElementById('lista');
         const loader = document.getElementById('loader');
+        const guia = document.getElementById('guia-container');
 
-        // --- 1. DETECTAR ESTADO AL CARGAR ---
+        // 1. CARGA INICIAL
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('login') === 'success') {
-                status.innerText = "¡Conexión exitosa!";
+            if (params.get('login') === 'success' || window.location.hash === '#success') {
                 pedirLista();
-            } else {
-                status.innerText = "Listo para conectar";
             }
         };
 
-        // --- 2. ACCIÓN DEL BOTÓN PRINCIPAL ---
+        // 2. BOTÓN PRINCIPAL
         btn.onclick = function() {
             if (btn.classList.contains('btn-connect')) {
-                // Ir a Google
-                status.innerText = "Redirigiendo...";
                 window.location.href = API_URL;
             } else {
-                // Escanear si ya está conectado
                 pedirLista();
             }
         };
 
-        // --- 3. PEDIR DATOS (JSONP) ---
+        // 3. CARGAR LISTA (JSONP)
         function pedirLista() {
+            btn.style.display = 'none';
+            guia.style.display = 'none';
             loader.style.display = "block";
-            status.innerText = "Buscando correos...";
+            status.innerText = "Buscando correos históricos de +1 año...";
             listaDiv.innerHTML = "";
             
             const cb = "callback_" + Math.floor(Math.random() * 1000000);
             window[cb] = function(data) {
                 loader.style.display = "none";
+                btn.style.display = 'block';
                 if (data.lista) {
                     renderizar(data);
                 } else {
-                    status.innerText = "Error: " + (data.error || "Sin respuesta");
+                    status.innerText = "Error: " + (data.error || "No hay respuesta");
+                    btn.innerText = "REINTENTAR CONEXIÓN";
                 }
                 delete window[cb];
             };
 
             const s = document.createElement('script');
-            s.src = API_URL + "?action=list&callback=" + cb + "&t=" + Date.now();
+            s.src = `${API_URL}?action=list&callback=${cb}&t=${Date.now()}`;
             document.body.appendChild(s);
         }
 
-        // --- 4. MOSTRAR CORREOS ---
-     function renderizar(data) {
-    userMail.innerText = data.email;
-    
-    // 1. CAMBIO DE BOTÓN: Ocultamos el de conectar y mostramos el de refrescar correctamente
-    const btnMain = document.getElementById('btn-main');
-    btnMain.innerText = "REFRESCAR LISTA";
-    btnMain.style.background = "#0b8043"; // Cambia a verde
-    btnMain.onclick = pedirLista; // Ahora el botón sirve para refrescar
+        // 4. DIBUJAR BLOQUES
+        function renderizar(data) {
+            userMail.innerText = "Cuenta: " + data.email;
+            btn.innerText = "REFRESCAR LISTA";
+            btn.className = "btn btn-scan";
+            status.innerText = "Remitentes históricos: " + data.lista.length;
 
-    status.innerText = "Remitentes históricos detectados: " + data.lista.length;
+            let html = "";
+            data.lista.forEach(item => {
+                html += `
+                <div class="card" id="card-${item.id}">
+                    <div class="card-header">
+                        <div style="flex:1">
+                            <span class="remitente">${item.remitente}</span>
+                            <div style="font-size: 0.85rem; color:#5f6368; margin: 4px 0;">${item.asunto}</div>
+                            <div class="badge-conteo">${item.conteo} correos acumulados</div>
+                        </div>
+                        <span style="font-size: 10px; color: #fff; background: #555; padding: 2px 6px; border-radius: 4px;">${item.tipo}</span>
+                    </div>
 
-    let html = "";
-    data.lista.forEach(item => {
-        html += `
-        <div class="card" id="card-${item.id}" style="border-left: 8px solid #d93025; padding: 20px; margin-bottom: 15px;">
-            <div style="text-align: left; margin-bottom: 15px;">
-                <b style="font-size: 1.2rem; color: #1a73e8;">${item.remitente}</b>
-                <div style="color: #666; font-size: 0.9rem; margin: 5px 0;">${item.asunto}</div>
-                <div style="display: inline-block; background: #feefee; color: #d93025; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: bold;">
-                    ${item.conteo} correos acumulados
-                </div>
-            </div>
+                    <div class="grid-botones">
+                        <button class="btn-action btn-ver" onclick="verTodos('${item.email}')">Ver (${item.conteo})</button>
+                        <button class="btn-action btn-borrar" onclick="ejecutar('${item.id}', 'delete')">Borrar</button>
+                        <button class="btn-action btn-baja" onclick="ejecutar('${item.id}', 'unsubscribe')">Baja</button>
+                    </div>
+                </div>`;
+            });
+            listaDiv.innerHTML = html || "<p>¡Bandeja limpia! No hay correos de más de 1 año.</p>";
+        }
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                <button onclick="verTodos('${item.email}')" 
-                    style="background:#fff; color:#3c4043; border:1px solid #dadce0; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
-                    Ver (${item.conteo})
-                </button>
-                
-                <button onclick="ejecutar('${item.id}', 'delete')" 
-                    style="background:#d93025; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
-                    Borrar
-                </button>
-                
-                <button onclick="ejecutar('${item.id}', 'unsubscribe')" 
-                    style="background:#0b8043; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">
-                    Baja
-                </button>
-            </div>
-        </div>`;
-    });
-    listaDiv.innerHTML = html;
-}
+        // 5. ACCIÓN VER (BÚSQUEDA)
+        function verTodos(email) {
+            if(!email) return alert("Email no disponible");
+            window.open(`https://mail.google.com/mail/u/0/#search/from%3A${encodeURIComponent(email)}`, '_blank');
+        }
 
-// Función que abre TODOS los correos de ese remitente en Gmail
-function verTodos(email) {
-    const searchUrl = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(email);
-    window.open(searchUrl, '_blank');
-}
-
-// Nueva función para ver el listado completo filtrado por email
-function verTodos(email) {
-    // Abre Gmail con la búsqueda "from:correo@ejemplo.com"
-    window.open(`https://mail.google.com/mail/u/0/#search/from%3A${encodeURIComponent(email)}`, '_blank');
-}
-// Función para ver el correo (abre en pestaña nueva)
-function ver(id) {
-    window.open("https://mail.google.com/mail/u/0/#inbox/" + id, "_blank");
-}
-        // --- 5. EJECUTAR BORRADO ---
+        // 6. ACCIÓN BORRAR / BAJA
         function ejecutar(id, accion) {
             const card = document.getElementById('card-' + id);
             card.style.opacity = "0.3";
+            card.style.pointerEvents = "none";
             
             const cb = "cb_" + Math.floor(Math.random() * 1000000);
             window[cb] = function(res) {
                 if (res.status === "ok") {
-                    card.remove();
+                    card.style.transition = "all 0.4s";
+                    card.style.transform = "scale(0.8)";
+                    card.style.opacity = "0";
+                    setTimeout(() => card.remove(), 400);
                 } else {
                     card.style.opacity = "1";
-                    alert("No se pudo borrar");
+                    card.style.pointerEvents = "all";
+                    alert("Error: Google no pudo procesar la acción.");
                 }
                 delete window[cb];
             };
 
             const s = document.createElement('script');
-            s.src = API_URL + "?action=" + accion + "&id=" + id + "&callback=" + cb;
+            s.src = `${API_URL}?action=${accion}&id=${id}&callback=${cb}&t=${Date.now()}`;
             document.body.appendChild(s);
         }
     </script>
