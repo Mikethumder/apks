@@ -188,16 +188,25 @@ function verTodos(email) {
     if(!email) return alert("Email no disponible");
     
     const query = "from:" + email;
+    const encodedQuery = encodeURIComponent(query);
     
-    // 1. Intentamos la URL de búsqueda directa (La más compatible con Apps)
-    const urlBusqueda = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query);
+    // Detectamos si es móvil
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     
-    // 2. Si estás en móvil, a veces es mejor abrirla en la misma pestaña para que el SO la capture
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        window.location.href = urlBusqueda;
+    let url;
+    if (isMobile) {
+        // Esta URL fuerza a la interfaz moderna de Gmail a ejecutar la búsqueda
+        // Evita que caiga en la versión /mu/mp/ que me pasaste
+        url = "https://mail.google.com/mail/u/0/x/?&v=b&s=q&q=" + encodedQuery;
+        
+        // Intento secundario si el primero te sigue mandando a la versión básica:
+        // url = "https://mail.google.com/mail/u/0/?search=query&view=tl&q=" + encodedQuery;
     } else {
-        window.open(urlBusqueda, '_blank');
+        // Versión estándar para PC
+        url = "https://mail.google.com/mail/u/0/#search/" + encodedQuery;
     }
+    
+    window.location.href = url;
 }
         
 function ejecutar(id, accion) {
