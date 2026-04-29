@@ -138,18 +138,18 @@ function pedirLista() {
 function verTodos(email) {
     if(!email) return;
     
-    const query = "from:" + email;
+    // 1. Limpiamos el email de posibles espacios invisibles
+    const cleanEmail = email.trim();
     
-    // Esta estructura (#search/...) es la que usa Gmail internamente.
-    // Al usar encodeURIComponent nos aseguramos de que los dos puntos (:) y el @
-    // lleguen limpios y Gmail no se pierda.
-    const url = "https://mail.google.com/mail/u/0/#search/" + encodeURIComponent(query);
+    // 2. Usamos la ruta /#search/ que es prioritaria sobre cualquier otra
+    // Al NO incluir nada antes del #, Gmail no intenta cargar el Inbox primero
+    const url = "https://mail.google.com/mail/u/0/#search/from%3A" + encodeURIComponent(cleanEmail);
 
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // En móvil, si la App está instalada, esto debería "despertarla" con el filtro
-        window.location.href = url;
+        // En móvil usamos location.replace para que no pueda volver atrás al inbox
+        window.location.replace(url);
     } else {
-        // En PC, abrimos en pestaña nueva
+        // En PC, abrimos y forzamos el foco
         const win = window.open(url, '_blank');
         if (win) win.focus();
     }
