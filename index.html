@@ -148,55 +148,7 @@ function verTodos(btnVer, email) {
     s.src = `${API_URL}?action=getLinks&email=${encodeURIComponent(email)}&callback=${cb}`;
     document.body.appendChild(s);
 }
-function generarInterfazLogin(userEmail) {
-  var urlApp = "https://mikethumder.github.io/LimpiaGmail/";
-  var urlCambiar = "https://accounts.google.com/AccountChooser?continue=" + encodeURIComponent(ScriptApp.getService().getUrl());
-  
-  var html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <!-- Esta línea es CRÍTICA para que no se vea minúsculo en el móvil -->
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <style>
-        body { 
-          margin: 0; padding: 0; height: 100vh; width: 100vw;
-          display: flex; align-items: center; justify-content: center;
-          font-family: -apple-system, sans-serif; background-color: #f1f3f4;
-        }
-        .card {
-          width: 90%; max-width: 400px; background: white;
-          padding: 40px 20px; border-radius: 24px; text-align: center;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.1); box-sizing: border-box;
-        }
-        h2 { font-size: 24px; color: #202124; margin-bottom: 10px; }
-        p { color: #5f6368; font-size: 16px; margin-bottom: 30px; }
-        .btn-main {
-          display: block; background: #d93025; color: white;
-          text-decoration: none; padding: 18px; border-radius: 12px;
-          font-weight: bold; font-size: 18px; margin-bottom: 15px;
-        }
-        .btn-change {
-          display: block; color: #1a73e8; text-decoration: none;
-          padding: 12px; font-size: 14px; font-weight: 500;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <h2>Sesión Iniciada</h2>
-        <p>Estás conectado como:<br><b>${userEmail}</b></p>
-        <a href="${urlApp}?login=success" target="_top" class="btn-main">ENTRAR A LIMPIAGMAIL</a>
-        <a href="${urlCambiar}" target="_top" class="btn-change">🔄 Cambiar de cuenta</a>
-      </div>
-    </body>
-    </html>`;
 
-  return HtmlService.createHtmlOutput(html)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
 // Función auxiliar para mostrar la ventana flotante
 function mostrarModalEnlaces(email, links) {
     const listaHTML = links.map(l => `
