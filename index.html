@@ -106,15 +106,16 @@ btn.onclick = function() {
 };
 
 function pedirLista() {
-    if (status) status.innerText = "Conectando con Google...";
+    status.innerText = "Conectando con Google...";
     
+    // Nombre único para la función de retorno
     const cbName = "cb_" + Date.now();
 
     window[cbName] = function(data) {
         if (data.status === "ok") {
             renderizarTarjetas(data);
         } else {
-            if (status) status.innerText = "Error: " + data.error;
+            status.innerText = "Error: " + data.error;
         }
         delete window[cbName];
         document.getElementById(cbName)?.remove();
@@ -122,16 +123,17 @@ function pedirLista() {
 
     const script = document.createElement('script');
     script.id = cbName;
-    // La URL debe ser exacta y terminar en /exec
+    // t=Date.now() fuerza a Google a enviar una respuesta nueva, no una fallida guardada
     script.src = `${API_URL}?action=list&callback=${cbName}&t=${Date.now()}`;
     
     script.onerror = () => {
-        if (status) status.innerText = "Error crítico de red. Revisa permisos del script.";
-        console.error("URL rechazada:", API_URL);
+        status.innerText = "Error de red: El script de Google no respondió.";
+        console.error("No se pudo cargar:", API_URL);
     };
 
     document.body.appendChild(script);
 }
+        
 // --- 3. RENDERIZADO ---
 function renderizarTarjetas(data) {
     userMail.innerText = "Cuenta: " + data.email;
