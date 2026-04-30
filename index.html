@@ -138,21 +138,21 @@ function pedirLista() {
 function verTodos(email) {
     if(!email) return;
     
-    const filtro = "from:" + email;
+    // Mostramos estado en la UI
+    status.innerText = "Preparando carpeta para " + email + "...";
     
-    // Intentamos copiar al portapapeles automáticamente
-    navigator.clipboard.writeText(filtro).then(() => {
-        alert("Copiado: " + filtro + "\n\nAhora se abrirá Gmail. Solo tienes que PEGAR en el buscador.");
-        
-        // Abrimos Gmail (la URL simple que suele despertar la App)
-        const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(filtro);
-        window.location.href = url;
-        
-    }).catch(err => {
-        // Si el móvil bloquea el copiado automático, lo hacemos manual
-        prompt("Copia este texto para pegarlo en Gmail:", filtro);
-        window.location.href = "https://mail.google.com/mail/u/0/";
-    });
+    const cb = "cb" + Date.now();
+    window[cb] = function(res) {
+        if(res.status === "ok") {
+            // Redirección directa a la etiqueta física
+            window.location.href = "https://mail.google.com/mail/u/0/#label/REVISAR";
+        }
+        delete window[cb];
+    };
+
+    const s = document.createElement('script');
+    s.src = `${API_URL}?action=prepararFiltro&email=${encodeURIComponent(email)}&callback=${cb}`;
+    document.body.appendChild(s);
 }
 // --- 4. RENDERIZAR BLOQUES ---
 function renderizar(data) {
