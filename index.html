@@ -91,27 +91,51 @@ btn.onclick = function() {
  * Solicita la lista de remitentes al servidor de Google.
  * Implementa un sistema de callback dinámico para JSONP.
  */
+/**
+ * Solicita la lista al google app usando JSONP con manejo de errores.
+ */
 function pedirLista() {
     if (status) status.innerText = "Conectando con Google...";
     
-    // 1. Creamos un nombre de función único para esta petición
-    const nombreCallback = "callback_" + Date.now();
+    // 1. Nombre único para el callback
+    const cbName = "cb_" + Date.now();
     
-    // 2. Definimos qué hacer cuando Google nos responda
-    window[nombreCallback] = function(data) {
+    // 2. Temporizador de seguridad (Timeout)
+    const timeout = setTimeout(() => {
+        if (window[cbName]) {
+            if (status) status.innerText = "Error: El servidor de Google no responde.";
+            delete window[cbName];
+            document.getElementById(cbName)?.remove();
+        }
+    }, 12000); // 12 segundos de espera
+
+    // 3. Definición de la respuesta exitosa
+    window[cbName] = function(data) {
+        clearTimeout(timeout); // Cancelamos el temporizador
         if (data.status === "ok") {
-            if (status) status.innerText = "Lista recibida. Procesando...";
-            // Guardamos el email del usuario y renderizamos las tarjetas
+            if (status) status.innerText = "Lista cargada.";
             renderizarTarjetas(data.lista);
         } else {
-            if (status) status.innerText = "Error: " + (data.error || "Respuesta inválida");
-            console.error("Error en servidor:", data.error);
+            if (status) status.innerText = "Error en datos: " + data.error;
         }
-        
-        // 3. Limpieza: eliminamos la función y el script tras completar
-        delete window[nombreCallback];
-        document.getElementById('temp-script')?.remove();
+        delete window[cbName];
+        document.getElementById(cbName)?.remove();
     };
+
+    // 4. Creación del elemento de script para la petición
+    const script = document.createElement('script');
+    script.id = cbName;
+    script.src = `${API_URL}?action=list&callback=${cbName}`;
+    
+    // Error de red (URL incorrecta o caída de servicio)
+    script.onerror = () => {
+        clearTimeout(timeout);
+        if (status) status.innerText = "Error físico de conexión.";
+        delete window[cbName];
+    };
+
+    document.body.appendChild(script);
+}
 
     // 4. Inyectamos el script en el HTML para realizar la petición
     const script = document.createElement('script');
