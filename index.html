@@ -138,19 +138,20 @@ function pedirLista() {
 function verTodos(email) {
     if(!email) return;
     
-    // Mostramos estado en la UI
-    status.innerText = "Preparando carpeta para " + email + "...";
-    
+    // Mostramos que estamos trabajando
+    if (typeof status !== 'undefined') status.innerText = "Preparando carpeta...";
+
     const cb = "cb" + Date.now();
     window[cb] = function(res) {
         if(res.status === "ok") {
-            // Redirección directa a la etiqueta física
+            // Abrimos la etiqueta "REVISAR". Esto Gmail lo respeta siempre.
             window.location.href = "https://mail.google.com/mail/u/0/#label/REVISAR";
         }
         delete window[cb];
     };
 
     const s = document.createElement('script');
+    // Usamos tu URL de script guardada en la variable API_URL
     s.src = `${API_URL}?action=prepararFiltro&email=${encodeURIComponent(email)}&callback=${cb}`;
     document.body.appendChild(s);
 }
