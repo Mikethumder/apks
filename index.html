@@ -22,7 +22,7 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--red); border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; margin: 15px auto; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 8px solid var(--red); transition: transform 0.3s; }
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 8px solid var(--red); transition: all 0.3s ease; }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
         .remitente { font-size: 1.15rem; color: var(--blue); font-weight: bold; display: block; }
         .badge-conteo { display: inline-block; background: #feefee; color: var(--red); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-top: 8px; }
@@ -46,213 +46,213 @@
     <div id="status">Esperando conexión...</div>
     <div id="loader" class="loader"></div>
     
-    <button id="btn-main" class="btn btn-connect">CONECTAR GMAIL</button>
+    <button id="btn-main" class="btn btn-connect" style="display: none;">CONECTAR GMAIL</button>
     
     <div id="lista"></div>
 
     <div id="guia-container" class="guia">
-        <b>¿Primera vez?</b> Pulsa Conectar, permite los permisos y vuelve aquí.
+        <b>¿Primera vez?</b> Pulsa Conectar, otorga los permisos necesarios a Google y vuelve aquí para empezar.
     </div>
 
     <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+        // URL de tu CODIGO (Google Apps Script)
+        const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
 
-const btn = document.getElementById('btn-main');
-const status = document.getElementById('status');
-const userMail = document.getElementById('user-mail');
-const listaDiv = document.getElementById('lista');
-const loader = document.getElementById('loader');
+        const btn = document.getElementById('btn-main');
+        const status = document.getElementById('status');
+        const userMail = document.getElementById('user-mail');
+        const listaDiv = document.getElementById('lista');
+        const loader = document.getElementById('loader');
 
-// --- 1. COMUNICACIÓN CENTRALIZADA ---
-/**
- * Motor de peticiones unificado con gestión de estados visuales.
- */
+        // --- 1. DETECCIÓN AUTOMÁTICA AL CARGAR ---
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('login') === 'success') {
+                btn.style.display = 'block';
+                pedirLista();
+            } else {
+                btn.style.display = 'block';
+                status.innerText = "Listo para iniciar.";
+            }
+        };
 
-function llamarGoogle(parametros, alFinalizar) {
-    loader.style.display = 'block';
-    const cbName = "cb_" + Date.now();
+        // --- 2. CONTROL DEL BOTÓN PRINCIPAL ---
+        btn.onclick = function() {
+            if (btn.innerText.includes("CONECTAR")) {
+                btn.innerText = "⏳ Redirigiendo...";
+                btn.disabled = true;
+                window.location.href = API_URL;
+            } else {
+                pedirLista();
+            }
+        };
 
-    window[cbName] = function(data) {
-        loader.style.display = 'none';
-        alFinalizar(data);
-        delete window[cbName];
-        document.getElementById(cbName)?.remove();
-    };
-
-    const script = document.createElement('script');
-    script.id = cbName;
-    let url = `${API_URL}?callback=${cbName}`;
-    for (let clave in parametros) {
-        url += `&${clave}=${encodeURIComponent(parametros[clave])}`;
-    }
-    script.src = url + "&t=" + Date.now(); // Evita caché de errores antiguos
-    
-    script.onerror = () => {
-        loader.style.display = 'none';
-        status.innerText = "Error de red. Revisa permisos del script.";
-    };
-
-    document.body.appendChild(script);
-}
-
-/**
- * Control de carga inicial y redirección
- */
-window.onload = function() {
-    const params = new URLSearchParams(window.location.search);
-    
-    if (params.get('login') === 'success') {
-        pedirLista(); // Carga automática si ya logueamos
-    } else {
-        btn.innerText = "CONECTAR GMAIL";
-        btn.style.display = 'block';
-    }
-};
-
-/**
- * Lógica del botón principal
- */
-btn.onclick = function() {
-    if (btn.innerText.includes("CONECTAR")) {
-        btn.innerText = "⏳ Redirigiendo...";
-        btn.disabled = true;
-        window.location.href = API_URL;
-    } else {
-        pedirLista();
-    }
-};
-
-/**
- * Función para pedir la lista y actualizar el botón
- */
-function pedirLista() {
-    btn.innerText = "⏳ Cargando correos...";
-    btn.disabled = true;
-    if (status) status.innerText = "Conectando con Google...";
-    loader.style.display = 'block';
-
-    llamarGoogle({ action: 'list' }, function(res) {
-        loader.style.display = 'none';
-        btn.disabled = false;
-        
-        if (res.status === "ok") {
-            btn.innerText = "🔄 REFRESCAR LISTA";
-            btn.className = "btn btn-scan";
-            renderizarTarjetas(res);
-        } else {
-            btn.innerText = "REINTENTAR CONEXIÓN";
-            if (status) status.innerText = "Error: " + res.error;
-        }
-    });
-}
-/**
- * Acción de baja que limpia el mensaje tras terminar.
- */
-function buscarBaja(id, email) {
-    const card = document.getElementById('card-' + id);
-    const btnBaja = card.querySelector('.btn-baja');
-    const originalText = btnBaja.innerText;
-
-    btnBaja.innerText = "⏳...";
-    status.innerText = "Buscando link de baja para " + email;
-
-    llamarGoogle({ action: 'getUnsubscribeData', email: email }, function(res) {
-        btnBaja.innerText = originalText;
-        status.innerText = "Proceso de búsqueda finalizado.";
-        if (res.status === "ok") {
-            mostrarInterfazBaja(id, email, res.fecha, res.link);
-        }
-    });
-}
-        
-// --- 3. RENDERIZADO ---
-function renderizarTarjetas(data) {
-    userMail.innerText = "Cuenta: " + data.email;
-    btn.innerText = "REFRESCAR LISTA";
-    btn.className = "btn btn-scan";
-    status.innerText = "Remitentes encontrados: " + data.lista.length;
-
-    let html = "";
-    data.lista.forEach(item => {
-        html += `
-        <div class="card" id="card-${item.id}">
-            <div class="card-header">
-                <div style="flex:1">
-                    <span class="remitente">${item.remitente}</span>
-                    <div style="font-size: 0.85rem; color:#5f6368;">${item.email}</div>
-                    <div class="badge-conteo">${item.conteo} correos</div>
-                </div>
-            </div>
-            <div class="grid-botones">
-                <button class="btn-action btn-ver" onclick="verTodos(this, '${item.email}')">Ver todos</button>
-                <button class="btn-action btn-borrar" onclick="ejecutarBorradoMasivo('${item.id}', '${item.email}')">Borrar todo</button>
-                <button class="btn-action btn-baja" onclick="buscarBaja('${item.id}', '${item.email}')">Baja</button>
-            </div>
-        </div>`;
-    });
-    listaDiv.innerHTML = html || "Bandeja impecable.";
-}
-
-// --- 4. ACCIONES ---
-function verTodos(btnVer, email) {
-    const textoOriginal = btnVer.innerText;
-    btnVer.innerText = "⏳...";
-    
-    llamarGoogle({ action: 'getLinks', email: email }, function(res) {
-        btnVer.innerText = textoOriginal;
-        if(res.status === "ok") {
-            const listaHTML = res.links.map(l => `
-                <div style="margin-bottom:10px; padding:10px; background:#f8f9fa; border-radius:8px; border:1px solid #eee;">
-                    <a href="${l.url}" target="_blank" style="color:var(--red); text-decoration:none; font-weight:bold; font-size:14px;">✉️ ${l.asunto}</a>
-                    <div style="font-size:11px; color:gray;">${l.fecha}</div>
-                </div>`).join('');
+        // --- 3. MOTOR DE COMUNICACIÓN CON GOOGLE ---
+        function llamarGoogle(parametros, alFinalizar) {
+            loader.style.display = 'block';
+            const cbName = "cb_" + Date.now();
             
-            mostrarModal(`Correos de ${email}`, listaHTML);
+            window[cbName] = function(data) {
+                loader.style.display = 'none';
+                alFinalizar(data);
+                delete window[cbName];
+                document.getElementById(cbName)?.remove();
+            };
+
+            const script = document.createElement('script');
+            script.id = cbName;
+            let url = `${API_URL}?callback=${cbName}`;
+            for (let clave in parametros) {
+                url += `&${clave}=${encodeURIComponent(parametros[clave])}`;
+            }
+            script.src = url + "&t=" + Date.now(); // Fuerza evitar caché
+            
+            script.onerror = () => {
+                loader.style.display = 'none';
+                status.innerText = "Error de red. Revisa que GOOGLE esté implementado para 'Cualquier persona'.";
+            };
+
+            document.body.appendChild(script);
         }
-    });
-}
 
-function ejecutarBorradoMasivo(id, email) {
-    if(!confirm(`¿Borrar todos los correos de ${email}?`)) return;
-    
-    const card = document.getElementById('card-' + id);
-    card.style.opacity = "0.5";
+        // --- 4. PETICIÓN PRINCIPAL DE LISTA ---
+        function pedirLista() {
+            btn.innerText = "⏳ Cargando correos...";
+            btn.disabled = true;
+            status.innerText = "Conectando con Google...";
 
-    llamarGoogle({ action: 'delete', email: email }, function(res) {
-        if (res.status === "ok") {
-            card.style.transform = "translateX(100%)";
-            setTimeout(() => card.remove(), 300);
-        } else {
-            card.style.opacity = "1";
-            alert("Error al borrar.");
+            llamarGoogle({ action: 'list' }, function(res) {
+                btn.disabled = false;
+                if (res.status === "ok") {
+                    btn.innerText = "🔄 REFRESCAR LISTA";
+                    btn.className = "btn btn-scan";
+                    renderizarTarjetas(res);
+                } else {
+                    btn.innerText = "REINTENTAR CONEXIÓN";
+                    status.innerText = "Error: " + res.error;
+                }
+            });
         }
-    });
-}
 
+        // --- 5. RENDERIZADO DE INTERFAZ ---
+        function renderizarTarjetas(data) {
+            userMail.innerText = "Cuenta: " + data.email;
+            status.innerText = "Remitentes encontrados: " + data.lista.length;
 
-// --- 5. MODALES Y VENTANAS ---
-function mostrarModal(titulo, contenido) {
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
-    modal.innerHTML = `
-        <div style="background:white; border-radius:20px; width:100%; max-width:400px; max-height:80vh; overflow-y:auto; padding:20px;">
-            <h3 style="margin-top:0;">${titulo}</h3>
-            ${contenido}
-            <button onclick="this.parentElement.parentElement.remove()" style="width:100%; padding:15px; background:var(--blue); color:white; border:none; border-radius:12px; margin-top:10px; font-weight:bold;">CERRAR</button>
-        </div>`;
-    document.body.appendChild(modal);
-}
+            let html = "";
+            data.lista.forEach(item => {
+                html += `
+                <div class="card" id="card-${item.id}">
+                    <div class="card-header">
+                        <div style="flex:1">
+                            <span class="remitente">${item.remitente}</span>
+                            <div style="font-size: 0.85rem; color:#5f6368;">${item.email}</div>
+                            <div class="badge-conteo">${item.conteo} correos</div>
+                        </div>
+                    </div>
+                    <div class="grid-botones">
+                        <button class="btn-action btn-ver" onclick="verTodos(this, '${item.email}')">Ver todos</button>
+                        <button class="btn-action btn-borrar" onclick="ejecutarBorradoMasivo('${item.id}', '${item.email}')">Borrar todo</button>
+                        <button class="btn-action btn-baja" onclick="buscarBaja('${item.id}', '${item.email}')">Baja</button>
+                    </div>
+                </div>`;
+            });
+            listaDiv.innerHTML = html || "Bandeja impecable.";
+        }
 
-function mostrarInterfazBaja(id, email, fecha, link) {
-    const html = `
-        <p>Último correo: <b>${fecha}</b></p>
-        <p>Estado: ${link ? '✅ Localizado' : '❌ No encontrado'}</p>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-            <button onclick="window.open('${link}')" ${!link ? 'disabled' : ''} style="padding:15px; background:var(--green); color:white; border:none; border-radius:10px; font-weight:bold;">DAR DE BAJA</button>
-            <button onclick="window.open('${link}'); ejecutarBorradoMasivo('${id}', '${email}'); this.parentElement.parentElement.parentElement.remove();" ${!link ? 'disabled' : ''} style="padding:15px; background:var(--red); color:white; border:none; border-radius:10px; font-weight:bold;">BAJA Y BORRAR TODO</button>
-        </div>`;
-    mostrarModal("Gestión de Baja", html);
-}
+        // --- 6. ACCIONES DE LAS TARJETAS ---
+        function verTodos(btnVer, email) {
+            const textoOriginal = btnVer.innerText;
+            btnVer.innerText = "⏳...";
+            btnVer.disabled = true;
+
+            llamarGoogle({ action: 'getLinks', email: email }, function(res) {
+                btnVer.innerText = textoOriginal;
+                btnVer.disabled = false;
+                if(res.status === "ok") {
+                    const listaHTML = res.links.map(l => `
+                        <div style="margin-bottom:10px; padding:10px; background:#f8f9fa; border-radius:8px; border:1px solid #eee; text-align:left;">
+                            <a href="${l.url}" target="_blank" style="color:var(--red); text-decoration:none; font-weight:bold; font-size:14px;">✉️ ${l.asunto}</a>
+                            <div style="font-size:11px; color:gray;">${l.fecha}</div>
+                        </div>`).join('');
+                    mostrarModal(`Correos de ${email}`, listaHTML);
+                } else {
+                    alert("Error: " + res.error);
+                }
+            });
+        }
+
+        function ejecutarBorradoMasivo(id, email) {
+            if(!confirm(`¿Seguro que quieres borrar todos los correos de ${email}?`)) return;
+            
+            const card = document.getElementById('card-' + id);
+            const btnBorrar = card.querySelector('.btn-borrar');
+            const textoOriginal = btnBorrar.innerText;
+
+            btnBorrar.innerText = "⏳...";
+            btnBorrar.disabled = true;
+            status.innerText = "Eliminando correos de " + email + "...";
+
+            llamarGoogle({ action: 'delete', email: email }, function(res) {
+                if (res.status === 'ok') {
+                    status.innerText = "Borrado exitoso.";
+                    card.style.opacity = "0";
+                    card.style.transform = "scale(0.8)";
+                    setTimeout(() => card.remove(), 300);
+                } else {
+                    btnBorrar.innerText = textoOriginal;
+                    btnBorrar.disabled = false;
+                    alert("Error al borrar: " + res.error);
+                }
+            });
+        }
+
+        function buscarBaja(id, email) {
+            const card = document.getElementById('card-' + id);
+            const btnBaja = card.querySelector('.btn-baja');
+            const originalText = btnBaja.innerText;
+
+            btnBaja.innerText = "⏳...";
+            btnBaja.disabled = true;
+            status.innerText = "Buscando link de baja para " + email;
+
+            llamarGoogle({ action: 'getUnsubscribeData', email: email }, function(res) {
+                btnBaja.innerText = originalText;
+                btnBaja.disabled = false;
+                status.innerText = "Proceso de búsqueda finalizado.";
+                
+                if (res.status === "ok") {
+                    mostrarInterfazBaja(id, email, res.fecha, res.link);
+                } else {
+                    alert("Error: " + res.error);
+                }
+            });
+        }
+
+        // --- 7. VENTANAS EMERGENTES (MODALES) ---
+        function mostrarModal(titulo, contenido) {
+            const modal = document.createElement('div');
+            modal.id = "visor-modal";
+            modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+            modal.innerHTML = `
+                <div style="background:white; border-radius:20px; width:100%; max-width:400px; max-height:80vh; overflow-y:auto; padding:20px;">
+                    <h3 style="margin-top:0;">${titulo}</h3>
+                    ${contenido}
+                    <button onclick="document.getElementById('visor-modal').remove()" style="width:100%; padding:15px; background:var(--blue); color:white; border:none; border-radius:12px; margin-top:10px; font-weight:bold; cursor:pointer;">CERRAR</button>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        function mostrarInterfazBaja(id, email, fecha, link) {
+            const html = `
+                <p>Último correo: <b>${fecha}</b></p>
+                <p>Estado: ${link ? '✅ Localizado' : '❌ No encontrado'}</p>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button onclick="window.open('${link}')" ${!link ? 'disabled style="opacity:0.5;"' : 'style="cursor:pointer;"'} class="btn btn-scan">DAR DE BAJA</button>
+                    <button onclick="window.open('${link}'); ejecutarBorradoMasivo('${id}', '${email}'); document.getElementById('visor-modal').remove();" ${!link ? 'disabled style="opacity:0.5;"' : 'style="cursor:pointer;"'} class="btn btn-connect">BAJA Y BORRAR TODO</button>
+                </div>`;
+            mostrarModal("Gestión de Baja", html);
+        }
     </script>
 </body>
 </html>
