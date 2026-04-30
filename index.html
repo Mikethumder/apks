@@ -67,9 +67,7 @@ const loader = document.getElementById('loader');
 /**
  * Motor de peticiones unificado con gestión de estados visuales.
  */
-/**
- * Motor de peticiones unificado con gestión de estados visuales.
- */
+
 function llamarGoogle(parametros, alFinalizar) {
     loader.style.display = 'block';
     const cbName = "cb_" + Date.now();
@@ -98,25 +96,42 @@ function llamarGoogle(parametros, alFinalizar) {
 }
 
 /**
- * Función para pedir la lista con cambio de estado en el botón.
+ * Control central del botón principal
+ */
+btn.onclick = function() {
+    // Si el botón dice "CONECTAR", redirigimos al login de Google
+    if (btn.innerText.includes("CONECTAR")) {
+        btn.innerText = "⏳ Redirigiendo...";
+        btn.disabled = true;
+        window.location.href = API_URL;
+    } 
+    // Si ya estamos conectados, simplemente refrescamos la lista
+    else {
+        pedirLista();
+    }
+};
+
+/**
+ * Solicita la lista y actualiza el estado visual del botón
  */
 function pedirLista() {
     btn.innerText = "⏳ Cargando correos...";
-    btn.disabled = true; // Bloquea clics extra
-    status.innerText = "Conectando con Google...";
+    btn.disabled = true;
+    if (status) status.innerText = "Conectando con Google...";
 
     llamarGoogle({ action: 'list' }, function(res) {
-        btn.disabled = false;
+        btn.disabled = false; // Reactivamos el botón al recibir respuesta
+        
         if (res.status === "ok") {
             btn.innerText = "🔄 REFRESCAR LISTA";
+            btn.className = "btn btn-scan"; // Cambia a color verde (según tu CSS)
             renderizarTarjetas(res);
         } else {
             btn.innerText = "REINTENTAR CONEXIÓN";
-            status.innerText = "Error: " + res.error;
+            if (status) status.innerText = "Error: " + res.error;
         }
     });
 }
-
 /**
  * Acción de baja que limpia el mensaje tras terminar.
  */
