@@ -106,33 +106,31 @@ btn.onclick = function() {
 };
 
 function pedirLista() {
-    status.innerText = "Conectando con el servidor...";
-    loader.style.display = 'block';
-
-    // Creamos un nombre de función temporal único
+    if (status) status.innerText = "Conectando con Google...";
+    
+    // Creamos un nombre de función único
     const cbName = "cb_" + Date.now();
 
+    // Definimos la función que recibirá los datos
     window[cbName] = function(data) {
-        loader.style.display = 'none';
         if (data.status === "ok") {
             renderizarTarjetas(data);
         } else {
-            status.innerText = "Error del servidor: " + data.error;
+            if (status) status.innerText = "Error: " + data.error;
         }
-        // Limpieza inmediata tras recibir datos
+        // Limpieza de memoria
         delete window[cbName];
         document.getElementById(cbName)?.remove();
     };
 
     const script = document.createElement('script');
     script.id = cbName;
-    // IMPORTANTE: Pasamos action=list y el callback dinámico
-    script.src = `${API_URL}?action=list&callback=${cbName}&cache=` + Date.now();
+    // t=Date.now() evita que el navegador guarde errores en caché
+    script.src = `${API_URL}?action=list&callback=${cbName}&t=${Date.now()}`;
     
     script.onerror = () => {
-        loader.style.display = 'none';
-        status.innerText = "Error crítico: No se pudo cargar el script de Google.";
-        console.error("Fallo de red en la URL:", API_URL);
+        if (status) status.innerText = "Error crítico: No se pudo cargar el script de Google.";
+        console.error("Fallo de red al conectar con:", API_URL);
     };
 
     document.body.appendChild(script);
