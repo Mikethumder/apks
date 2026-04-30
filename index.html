@@ -96,35 +96,48 @@ function llamarGoogle(parametros, alFinalizar) {
 }
 
 /**
- * Control central del botón principal
+ * Control de carga inicial y redirección
+ */
+window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (params.get('login') === 'success') {
+        pedirLista(); // Carga automática si ya logueamos
+    } else {
+        btn.innerText = "CONECTAR GMAIL";
+        btn.style.display = 'block';
+    }
+};
+
+/**
+ * Lógica del botón principal
  */
 btn.onclick = function() {
-    // Si el botón dice "CONECTAR", redirigimos al login de Google
     if (btn.innerText.includes("CONECTAR")) {
         btn.innerText = "⏳ Redirigiendo...";
         btn.disabled = true;
         window.location.href = API_URL;
-    } 
-    // Si ya estamos conectados, simplemente refrescamos la lista
-    else {
+    } else {
         pedirLista();
     }
 };
 
 /**
- * Solicita la lista y actualiza el estado visual del botón
+ * Función para pedir la lista y actualizar el botón
  */
 function pedirLista() {
     btn.innerText = "⏳ Cargando correos...";
     btn.disabled = true;
     if (status) status.innerText = "Conectando con Google...";
+    loader.style.display = 'block';
 
     llamarGoogle({ action: 'list' }, function(res) {
-        btn.disabled = false; // Reactivamos el botón al recibir respuesta
+        loader.style.display = 'none';
+        btn.disabled = false;
         
         if (res.status === "ok") {
             btn.innerText = "🔄 REFRESCAR LISTA";
-            btn.className = "btn btn-scan"; // Cambia a color verde (según tu CSS)
+            btn.className = "btn btn-scan";
             renderizarTarjetas(res);
         } else {
             btn.innerText = "REINTENTAR CONEXIÓN";
