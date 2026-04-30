@@ -202,22 +202,45 @@ function renderizar(data) {
 
 // --- 5. ACCIONES (BORRADO Y BAJA) ---
 function ejecutarBorradoMasivo(id, email) {
-    if(!confirm("¿Seguro que quieres borrar TODOS los correos de " + email + "?")) return;
+    if(!confirm("¿Seguro que quieres borrar todos los correos de " + email + "?\nEsta acción no se puede deshacer fácilmente.")) return;
     
     const card = document.getElementById('card-' + id);
-    card.style.opacity = "0.3";
+    const btnBorrar = card.querySelector('.btn-borrar');
+    const textoOriginal = btnBorrar.innerHTML;
+
+    // 1. Bloqueo visual de la tarjeta y el botón
+    card.style.opacity = "0.5";
     card.style.pointerEvents = "none";
-    
+    btnBorrar.innerHTML = "⏳ Eliminando...";
+
     const cb = "cb_" + Date.now();
+    
+    // Timeout de seguridad de 15 segundos
+    const timer = setTimeout(() => {
+        if (window[cb]) {
+            card.style.opacity = "1";
+            card.style.pointerEvents = "all";
+            btnBorrar.innerHTML = textoOriginal;
+            alert("Google está tardando demasiado. Comprueba tu Gmail en unos minutos.");
+            delete window[cb];
+        }
+    }, 15000);
+
     window[cb] = function(res) {
-        if (res.status === "ok" || res.status === "success") {
+        clearTimeout(timer);
+        
+        if (res.status === "ok") {
+            // 2. Animación de salida si el borrado fue exitoso
             card.style.transition = "all 0.5s ease";
             card.style.transform = "translateX(150%)";
             setTimeout(() => card.remove(), 500);
+            if (status) status.innerText = "Borrado completado para " + email;
         } else {
-            alert("Error al borrar.");
+            // 3. Restaurar si hubo error
             card.style.opacity = "1";
             card.style.pointerEvents = "all";
+            btnBorrar.innerHTML = textoOriginal;
+            alert("Error al borrar: " + (res.error || "No se pudo completar"));
         }
         delete window[cb];
     };
