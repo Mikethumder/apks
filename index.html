@@ -115,11 +115,10 @@ function pedirLista() {
 function verTodos(btnVer, email) {
     if(!email) return;
     
-    // Feedback visual en el botón pulsado
     const textoOriginal = btnVer.innerHTML;
     btnVer.disabled = true;
     btnVer.innerHTML = '⏳ Preparando...';
-    if (status) status.innerText = "Etiquetando correos en Gmail para visualización...";
+    if (status) status.innerText = "Etiquetando correos de " + email + "...";
 
     const cb = "cb" + Date.now();
     window[cb] = function(res) {
@@ -128,7 +127,11 @@ function verTodos(btnVer, email) {
         
         if(res.status === "ok") {
             status.innerText = "Abriendo carpeta REVISAR...";
-            window.location.href = "https://mail.google.com/mail/u/0/#label/REVISAR";
+            
+            // CAMBIO CLAVE: Forzamos la carga de la etiqueta mediante parámetros de búsqueda
+            // Esta URL es más difícil de interceptar por la vista básica móvil
+            const urlSegura = "https://mail.google.com/mail/u/0/?tab=rm&ogbl#label/REVISAR";
+            window.location.href = urlSegura;
         } else {
             alert("Error: " + (res.error || "No se pudo preparar el filtro"));
         }
