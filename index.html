@@ -67,8 +67,10 @@ const loader = document.getElementById('loader');
 /**
  * Motor de peticiones unificado con gestión de estados visuales.
  */
+/**
+ * Motor de peticiones unificado con gestión de estados visuales.
+ */
 function llamarGoogle(parametros, alFinalizar) {
-    // 1. Preparamos la interfaz
     loader.style.display = 'block';
     const cbName = "cb_" + Date.now();
 
@@ -79,29 +81,28 @@ function llamarGoogle(parametros, alFinalizar) {
         document.getElementById(cbName)?.remove();
     };
 
-    // 2. Creamos la petición
     const script = document.createElement('script');
     script.id = cbName;
     let url = `${API_URL}?callback=${cbName}`;
     for (let clave in parametros) {
         url += `&${clave}=${encodeURIComponent(parametros[clave])}`;
     }
-    script.src = url + "&t=" + Date.now();
+    script.src = url + "&t=" + Date.now(); // Evita caché de errores antiguos
     
     script.onerror = () => {
         loader.style.display = 'none';
-        status.innerText = "Error de red. Revisa permisos en Google Script.";
+        status.innerText = "Error de red. Revisa permisos del script.";
     };
 
     document.body.appendChild(script);
 }
 
 /**
- * Función principal para pedir la lista (ahora limpia y clara).
+ * Función para pedir la lista con cambio de estado en el botón.
  */
 function pedirLista() {
     btn.innerText = "⏳ Cargando correos...";
-    btn.disabled = true;
+    btn.disabled = true; // Bloquea clics extra
     status.innerText = "Conectando con Google...";
 
     llamarGoogle({ action: 'list' }, function(res) {
@@ -112,6 +113,26 @@ function pedirLista() {
         } else {
             btn.innerText = "REINTENTAR CONEXIÓN";
             status.innerText = "Error: " + res.error;
+        }
+    });
+}
+
+/**
+ * Acción de baja que limpia el mensaje tras terminar.
+ */
+function buscarBaja(id, email) {
+    const card = document.getElementById('card-' + id);
+    const btnBaja = card.querySelector('.btn-baja');
+    const originalText = btnBaja.innerText;
+
+    btnBaja.innerText = "⏳...";
+    status.innerText = "Buscando link de baja para " + email;
+
+    llamarGoogle({ action: 'getUnsubscribeData', email: email }, function(res) {
+        btnBaja.innerText = originalText;
+        status.innerText = "Proceso de búsqueda finalizado.";
+        if (res.status === "ok") {
+            mostrarInterfazBaja(id, email, res.fecha, res.link);
         }
     });
 }
@@ -180,30 +201,7 @@ function ejecutarBorradoMasivo(id, email) {
     });
 }
 
-/**
- * Gestiona el proceso de baja y limpia el mensaje de búsqueda.
- */
-function buscarBaja(id, email) {
-    const card = document.getElementById('card-' + id);
-    const btnBaja = card.querySelector('.btn-baja');
-    const textoOriginal = btnBaja.innerText;
 
-    // Estado visual en la tarjeta
-    btnBaja.innerText = "⏳...";
-    status.innerText = "Localizando link de baja para " + email + "...";
-
-    llamarGoogle({ action: 'getUnsubscribeData', email: email }, function(res) {
-        // Limpiamos el mensaje de estado general
-        status.innerText = "Proceso finalizado.";
-        btnBaja.innerText = textoOriginal;
-        
-        if (res.status === "ok") {
-            mostrarInterfazBaja(id, email, res.fecha, res.link);
-        } else {
-            alert("No se pudo encontrar el link.");
-        }
-    });
-}
 // --- 5. MODALES Y VENTANAS ---
 function mostrarModal(titulo, contenido) {
     const modal = document.createElement('div');
