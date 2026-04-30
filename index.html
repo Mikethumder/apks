@@ -226,27 +226,22 @@ function ejecutarBorradoMasivo(id, email) {
 
 function verTodos(email) {
     if(!email) return;
-
-    // Creamos un formulario dinámico
-    const form = document.createElement('form');
-    form.method = 'GET';
-    form.action = 'https://mail.google.com/mail/u/0/';
-    form.target = '_blank'; // Para que intente abrir pestaña nueva
-
-    // El parámetro 'q' es la clave de búsqueda de Gmail
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'q';
-    input.value = 'from:' + email;
-
-    form.appendChild(input);
-    document.body.appendChild(form);
     
-    // Lo enviamos. Esto fuerza a Gmail a recibir el parámetro 'q'
-    form.submit();
+    // 1. Preparamos la búsqueda sin caracteres raros
+    const query = "from:" + email.trim();
     
-    // Limpiamos
-    document.body.removeChild(form);
+    // 2. Usamos la URL más "cruda" que existe. 
+    // Al no llevar # al final, Gmail se ve obligado a procesar el ?q=
+    const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query);
+
+    // 3. Pequeño truco: abrimos en pestaña nueva SIEMPRE.
+    // Esto evita que Gmail intente "reutilizar" la sesión actual donde sale el #inbox
+    const win = window.open(url, '_blank');
+    
+    // Si el navegador bloquea la ventana emergente, usamos la pestaña actual como plan B
+    if (!win) {
+        window.location.href = url;
+    }
 }
 
 // --- CAMBIO PARA QUE LA LISTA CARGUE EN MÓVIL ---
