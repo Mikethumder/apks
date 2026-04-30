@@ -106,14 +106,36 @@ btn.onclick = function() {
 };
 
 function pedirLista() {
-    status.innerText = "Buscando suscripciones antiguas...";
-    llamarGoogle({ action: 'list' }, function(res) {
-        if (res.status === 'ok') {
-            renderizarTarjetas(res);
+    status.innerText = "Conectando con el servidor...";
+    loader.style.display = 'block';
+
+    // Creamos un nombre de función temporal único
+    const cbName = "cb_" + Date.now();
+
+    window[cbName] = function(data) {
+        loader.style.display = 'none';
+        if (data.status === "ok") {
+            renderizarTarjetas(data);
         } else {
-            status.innerText = "Error: " + res.error;
+            status.innerText = "Error del servidor: " + data.error;
         }
-    });
+        // Limpieza inmediata tras recibir datos
+        delete window[cbName];
+        document.getElementById(cbName)?.remove();
+    };
+
+    const script = document.createElement('script');
+    script.id = cbName;
+    // IMPORTANTE: Pasamos action=list y el callback dinámico
+    script.src = `${API_URL}?action=list&callback=${cbName}&cache=` + Date.now();
+    
+    script.onerror = () => {
+        loader.style.display = 'none';
+        status.innerText = "Error crítico: No se pudo cargar el script de Google.";
+        console.error("Fallo de red en la URL:", API_URL);
+    };
+
+    document.body.appendChild(script);
 }
 
 // --- 3. RENDERIZADO ---
