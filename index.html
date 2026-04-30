@@ -87,7 +87,7 @@
             }
         };
 
-        // --- 3. MOTOR DE COMUNICACIÓN CON GOOGLE ---
+       // --- 3. MOTOR DE COMUNICACIÓN CON GOOGLE ---
         function llamarGoogle(parametros, alFinalizar) {
             loader.style.display = 'block';
             const cbName = "cb_" + Date.now();
@@ -105,16 +105,20 @@
             for (let clave in parametros) {
                 url += `&${clave}=${encodeURIComponent(parametros[clave])}`;
             }
-            script.src = url + "&t=" + Date.now(); // Fuerza evitar caché
+            script.src = url + "&t=" + Date.now();
             
+            // --- CÓDIGO CHIVATO MODIFICADO ---
             script.onerror = () => {
                 loader.style.display = 'none';
-                status.innerText = "Error de red. Revisa que GOOGLE esté implementado para 'Cualquier persona'.";
+                btn.disabled = false;
+                status.innerText = "Error de red. Abriendo diagnóstico...";
+                
+                // Te mostramos una caja para copiar la URL exacta que está fallando
+                prompt("Copia esta URL y ábrela en una pestaña nueva. Google te dirá el error real:", script.src);
             };
 
             document.body.appendChild(script);
         }
-
         // --- 4. PETICIÓN PRINCIPAL DE LISTA ---
         function pedirLista() {
             btn.innerText = "⏳ Cargando correos...";
