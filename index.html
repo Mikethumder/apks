@@ -227,21 +227,20 @@ function ejecutarBorradoMasivo(id, email) {
 function verTodos(email) {
     if(!email) return;
     
-    // 1. Preparamos la búsqueda sin caracteres raros
-    const query = "from:" + email.trim();
-    
-    // 2. Usamos la URL más "cruda" que existe. 
-    // Al no llevar # al final, Gmail se ve obligado a procesar el ?q=
-    const url = "https://mail.google.com/mail/u/0/?q=" + encodeURIComponent(query);
+    // 1. Llamamos a la acción de preparar la etiqueta
+    const cb = "cb" + Date.now();
+    window[cb] = function(res) {
+        if(res.status === "ok") {
+            // 2. Redirigimos a la etiqueta física (Esto no falla en móvil)
+            const url = "https://mail.google.com/mail/u/0/#label/REVISAR";
+            window.location.href = url;
+        }
+        delete window[cb];
+    };
 
-    // 3. Pequeño truco: abrimos en pestaña nueva SIEMPRE.
-    // Esto evita que Gmail intente "reutilizar" la sesión actual donde sale el #inbox
-    const win = window.open(url, '_blank');
-    
-    // Si el navegador bloquea la ventana emergente, usamos la pestaña actual como plan B
-    if (!win) {
-        window.location.href = url;
-    }
+    const s = document.createElement('script');
+    s.src = `${API_URL}?action=prepararFiltro&email=${encodeURIComponent(email)}&callback=${cb}`;
+    document.body.appendChild(s);
 }
 
 // --- CAMBIO PARA QUE LA LISTA CARGUE EN MÓVIL ---
