@@ -87,30 +87,45 @@ btn.onclick = function() {
 };
 
 // --- 2. PETICIÓN DE LISTA (HISTÓRICA) ---
+/**
+ * Solicita la lista de remitentes al servidor de Google.
+ * Implementa un sistema de callback dinámico para JSONP.
+ */
 function pedirLista() {
-    btn.style.display = 'none';
-    if(guia) guia.style.display = 'none';
-    loader.style.display = "block";
-    status.innerText = "Conectando con Google... Obteniendo conteos históricos";
-
-    const cb = "cb" + Date.now();
-    window[cb] = function(data) {
-        loader.style.display = "none";
-        btn.style.display = 'block';
-        if (data && data.lista) {
-            status.innerText = "¡Lista recibida!";
-            renderizar(data);
+    if (status) status.innerText = "Conectando con Google...";
+    
+    // 1. Creamos un nombre de función único para esta petición
+    const nombreCallback = "callback_" + Date.now();
+    
+    // 2. Definimos qué hacer cuando Google nos responda
+    window[nombreCallback] = function(data) {
+        if (data.status === "ok") {
+            if (status) status.innerText = "Lista recibida. Procesando...";
+            // Guardamos el email del usuario y renderizamos las tarjetas
+            renderizarTarjetas(data.lista);
         } else {
-            status.innerText = "Error de respuesta de Google.";
+            if (status) status.innerText = "Error: " + (data.error || "Respuesta inválida");
+            console.error("Error en servidor:", data.error);
         }
-        delete window[cb];
+        
+        // 3. Limpieza: eliminamos la función y el script tras completar
+        delete window[nombreCallback];
+        document.getElementById('temp-script')?.remove();
     };
 
-    const s = document.createElement('script');
-    s.src = `${API_URL}?action=list&callback=${cb}&nocache=${Math.random()}`;
-    document.body.appendChild(s);
+    // 4. Inyectamos el script en el HTML para realizar la petición
+    const script = document.createElement('script');
+    script.id = 'temp-script';
+    // Enviamos action=list y el nombre del callback que acabamos de crear
+    script.src = `${API_URL}?action=list&callback=${nombreCallback}`;
+    
+    // Manejo de errores de red
+    script.onerror = () => {
+        if (status) status.innerText = "Error de conexión con el script de Google.";
+    };
+    
+    document.body.appendChild(script);
 }
-
 // --- 3. FUNCIÓN VER TODOS (SISTEMA DE ETIQUETA) ---
 function verTodos(btnVer, email) {
     if(!email) return;
