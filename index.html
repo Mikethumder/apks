@@ -105,16 +105,26 @@ btn.onclick = function() {
     }
 };
 
+/**
+ * Solicita la lista y gestiona el estado del botón principal.
+ */
 function pedirLista() {
-    status.innerText = "Conectando con Google...";
-    
-    // Nombre único para la función de retorno
+    // Cambiamos el estado del botón y mostramos el loader
+    btn.innerText = "⏳ Cargando correos...";
+    btn.disabled = true;
+    if (status) status.innerText = "Conectando con Google...";
+    loader.style.display = 'block';
+
     const cbName = "cb_" + Date.now();
 
     window[cbName] = function(data) {
+        loader.style.display = 'none';
+        btn.disabled = false; // Reactivamos el botón
+        
         if (data.status === "ok") {
-            renderizarTarjetas(data);
+            renderizarTarjetas(data); // Esta función debe poner el botón en "REFRESCAR"
         } else {
+            btn.innerText = "CONECTAR GMAIL";
             status.innerText = "Error: " + data.error;
         }
         delete window[cbName];
@@ -123,14 +133,13 @@ function pedirLista() {
 
     const script = document.createElement('script');
     script.id = cbName;
-    // t=Date.now() fuerza a Google a enviar una respuesta nueva, no una fallida guardada
     script.src = `${API_URL}?action=list&callback=${cbName}&t=${Date.now()}`;
-    
     script.onerror = () => {
-        status.innerText = "Error de red: El script de Google no respondió.";
-        console.error("No se pudo cargar:", API_URL);
+        loader.style.display = 'none';
+        btn.disabled = false;
+        btn.innerText = "REINTENTAR CONEXIÓN";
+        status.innerText = "Error crítico de red.";
     };
-
     document.body.appendChild(script);
 }
         
@@ -198,15 +207,30 @@ function ejecutarBorradoMasivo(id, email) {
     });
 }
 
+/**
+ * Gestiona el proceso de baja y limpia el mensaje de búsqueda.
+ */
 function buscarBaja(id, email) {
-    status.innerText = "Localizando link de baja...";
+    const card = document.getElementById('card-' + id);
+    const btnBaja = card.querySelector('.btn-baja');
+    const textoOriginal = btnBaja.innerText;
+
+    // Estado visual en la tarjeta
+    btnBaja.innerText = "⏳...";
+    status.innerText = "Localizando link de baja para " + email + "...";
+
     llamarGoogle({ action: 'getUnsubscribeData', email: email }, function(res) {
+        // Limpiamos el mensaje de estado general
+        status.innerText = "Proceso finalizado.";
+        btnBaja.innerText = textoOriginal;
+        
         if (res.status === "ok") {
             mostrarInterfazBaja(id, email, res.fecha, res.link);
+        } else {
+            alert("No se pudo encontrar el link.");
         }
     });
 }
-
 // --- 5. MODALES Y VENTANAS ---
 function mostrarModal(titulo, contenido) {
     const modal = document.createElement('div');
