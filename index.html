@@ -70,7 +70,6 @@ const guia = document.getElementById('guia-container');
 // --- 1. DETECCIÓN AUTOMÁTICA AL CARGAR ---
 window.onload = function() {
     const params = new URLSearchParams(window.location.search);
-    // Si volvemos de Google, lanzamos la petición de lista de inmediato
     if (params.get('login') === 'success') {
         pedirLista();
     } else {
@@ -78,7 +77,7 @@ window.onload = function() {
     }
 };
 
-// BOTÓN CONECTAR
+// BOTÓN CONECTAR / REFRESCAR
 btn.onclick = function() {
     if (btn.innerText.includes("CONECTAR")) {
         window.location.href = API_URL;
@@ -87,64 +86,51 @@ btn.onclick = function() {
     }
 };
 
+// --- 2. PETICIÓN DE LISTA (HISTÓRICA) ---
 function pedirLista() {
     btn.style.display = 'none';
     if(guia) guia.style.display = 'none';
     loader.style.display = "block";
-    status.innerText = "Conectando con Google... (Paso 1/2)";
+    status.innerText = "Conectando con Google... Obteniendo conteos históricos";
 
-    const cbName = "cb" + Date.now();
-    
-    // Configurar un tiempo de espera (Timeout)
-    const timeout = setTimeout(() => {
-        if (window[cbName]) {
-            loader.style.display = "none";
-            btn.style.display = 'block';
-            status.innerHTML = "<b style='color:red;'>Google no responde.</b><br>Prueba a 'Refrescar Lista' o revisa si tienes muchos correos.";
-            delete window[cbName];
-        }
-    }, 20000); // 20 segundos de margen
-
-    window[cbName] = function(data) {
-        clearTimeout(timeout); // Detener el reloj de error
+    const cb = "cb" + Date.now();
+    window[cb] = function(data) {
         loader.style.display = "none";
         btn.style.display = 'block';
-        
         if (data && data.lista) {
             status.innerText = "¡Lista recibida!";
             renderizar(data);
         } else {
-            status.innerText = "Google respondió vacío. Reintenta.";
+            status.innerText = "Error de respuesta de Google.";
         }
-        delete window[cbName];
+        delete window[cb];
     };
 
     const s = document.createElement('script');
-    // Forzamos a que no use caché con Math.random()
-    s.src = `${API_URL}?action=list&callback=${cbName}&v=${Math.random()}`;
-    
-    // Si hay un error de carga del script (bloqueo de red)
-    s.onerror = function() {
-        clearTimeout(timeout);
-        loader.style.display = "none";
-        btn.style.display = 'block';
-        status.innerText = "Error de red: El navegador bloqueó la conexión.";
-    };
-    
+    s.src = `${API_URL}?action=list&callback=${cb}&nocache=${Math.random()}`;
     document.body.appendChild(s);
 }
 
-// FUNCIÓN VER (Simplificada para móvil)
-function verTodos(email) {
+// --- 3. FUNCIÓN VER TODOS (SISTEMA DE ETIQUETA) ---
+function verTodos(btnVer, email) {
     if(!email) return;
     
-    status.innerText = "Preparando carpeta para " + email + "...";
-    const cb = "cb" + Date.now();
+    // Feedback visual en el botón pulsado
+    const textoOriginal = btnVer.innerHTML;
+    btnVer.disabled = true;
+    btnVer.innerHTML = '⏳ Preparando...';
+    if (status) status.innerText = "Etiquetando correos en Gmail para visualización...";
 
+    const cb = "cb" + Date.now();
     window[cb] = function(res) {
+        btnVer.disabled = false;
+        btnVer.innerHTML = textoOriginal;
+        
         if(res.status === "ok") {
-            // Abrimos la etiqueta directamente. Esto no falla en móvil.
+            status.innerText = "Abriendo carpeta REVISAR...";
             window.location.href = "https://mail.google.com/mail/u/0/#label/REVISAR";
+        } else {
+            alert("Error: " + (res.error || "No se pudo preparar el filtro"));
         }
         delete window[cb];
     };
@@ -153,7 +139,8 @@ function verTodos(email) {
     s.src = `${API_URL}?action=prepararFiltro&email=${encodeURIComponent(email)}&callback=${cb}`;
     document.body.appendChild(s);
 }
-// --- 4. RENDERIZAR BLOQUES ---
+
+// --- 4. RENDERIZAR TARJETAS ---
 function renderizar(data) {
     userMail.innerText = "Cuenta: " + data.email;
     btn.innerText = "REFRESCAR LISTA";
@@ -168,147 +155,76 @@ function renderizar(data) {
             <div class="card-header">
                 <div style="flex:1">
                     <span class="remitente">${item.remitente}</span>
-                    <div style="font-size: 0.85rem; color:#5f6368;">${item.asunto}</div>
+                    <div style="font-size: 0.85rem; color:#5f6368;">${item.email}</div>
                     <div class="badge-conteo">${item.conteo} correos</div>
                 </div>
             </div>
             <div class="grid-botones">
-                <button class="btn-action btn-ver" onclick="verTodos('${item.email}')">Ver todos</button>
+                <button class="btn-action btn-ver" onclick="verTodos(this, '${item.email}')">Ver todos</button>
                 <button class="btn-action btn-borrar" onclick="ejecutarBorradoMasivo('${item.id}', '${item.email}')">Borrar todo</button>
-                <button class="btn-action btn-baja" onclick="ejecutar('${item.id}', 'unsubscribe')">Baja</button>
+                <button class="btn-action btn-baja" onclick="ejecutar('${item.id}', 'unsubscribe', '${item.email}')">Baja</button>
             </div>
         </div>`;
     });
     listaDiv.innerHTML = html || "Bandeja impecable.";
 }
 
-// --- 5. BORRADO MASIVO ---
+// --- 5. ACCIONES (BORRADO Y BAJA) ---
 function ejecutarBorradoMasivo(id, email) {
+    if(!confirm("¿Seguro que quieres borrar TODOS los correos de " + email + "?")) return;
+    
     const card = document.getElementById('card-' + id);
     card.style.opacity = "0.3";
     card.style.pointerEvents = "none";
-    card.style.background = "#fff0f0";
     
-    // Creamos un identificador único para esta petición
-    const cb = "cb_" + Math.floor(Math.random() * 1000000);
-    
-    // Configuramos un temporizador: si en 8 segundos no hay respuesta, desbloqueamos
-    const timeout = setTimeout(() => {
-        if (window[cb]) {
-            alert("Google está tardando en borrar tantos correos. Revisa tu Gmail en un momento.");
-            card.style.opacity = "1";
-            card.style.pointerEvents = "all";
-            card.style.background = "white";
-            delete window[cb];
-        }
-    }, 8000);
-
+    const cb = "cb_" + Date.now();
     window[cb] = function(res) {
-        clearTimeout(timeout); // Cancelamos el temporizador porque Google ha respondido
-        if (res.status === "ok") {
+        if (res.status === "ok" || res.status === "success") {
             card.style.transition = "all 0.5s ease";
             card.style.transform = "translateX(150%)";
             setTimeout(() => card.remove(), 500);
         } else {
-            alert("Error: " + (res.msg || "No se pudo borrar"));
+            alert("Error al borrar.");
             card.style.opacity = "1";
-            card.style.background = "white";
             card.style.pointerEvents = "all";
         }
         delete window[cb];
     };
 
     const s = document.createElement('script');
-    s.src = `${API_URL}?action=delete&email=${encodeURIComponent(email)}&callback=${cb}&t=${Date.now()}`;
+    s.src = `${API_URL}?action=delete&email=${encodeURIComponent(email)}&callback=${cb}`;
     document.body.appendChild(s);
 }
 
-function verTodos(email) {
-    if(!email) return;
-    
-    // 1. Llamamos a la acción de preparar la etiqueta
-    const cb = "cb" + Date.now();
-    window[cb] = function(res) {
-        if(res.status === "ok") {
-            // 2. Redirigimos a la etiqueta física (Esto no falla en móvil)
-            const url = "https://mail.google.com/mail/u/0/#label/REVISAR";
-            window.location.href = url;
-        }
-        delete window[cb];
-    };
-
-    const s = document.createElement('script');
-    s.src = `${API_URL}?action=prepararFiltro&email=${encodeURIComponent(email)}&callback=${cb}`;
-    document.body.appendChild(s);
-}
-
-// --- CAMBIO PARA QUE LA LISTA CARGUE EN MÓVIL ---
-function pedirLista() {
-    btn.style.display = 'none';
-    if(guia) guia.style.display = 'none';
-    loader.style.display = "block";
-    status.innerText = "Conectando con Google...";
-    
-    const cb = "cb" + Date.now(); // ID único
-    window[cb] = function(data) {
-        loader.style.display = "none";
-        btn.style.display = 'block';
-        if (data.lista) {
-            renderizar(data);
-        } else {
-            status.innerText = "Error de respuesta.";
-        }
-        delete window[cb];
-    };
-
-    const s = document.createElement('script');
-    // Añadimos un parámetro aleatorio al final para que el móvil no use la memoria vieja
-    s.src = `${API_URL}?action=list&callback=${cb}&nocache=${Math.random()}`;
-    document.body.appendChild(s);
-}        
-function ejecutar(id, accion) {
+function ejecutar(id, accion, email) {
     let borrarTambien = false;
-
     if (accion === 'unsubscribe') {
-        const respuesta = confirm(
-            "TRÁMITE DE BAJA\n\n" +
-            "¿Deseas BORRAR todos los correos ahora?\n\n" +
-            "• SÍ (Aceptar): Se borran todos.\n" +
-            "• NO (Cancelar): Se intenta la baja, pero los correos SE QUEDAN en tu bandeja."
-        );
-        if (respuesta) borrarTambien = true;
+        borrarTambien = confirm("¿Deseas BORRAR todos los correos después de tramitar la baja?");
     }
 
     const card = document.getElementById('card-' + id);
     card.style.opacity = "0.3";
     card.style.pointerEvents = "none";
     
-    const cb = "cb_" + Math.floor(Math.random() * 1000000);
+    const cb = "cb_" + Date.now();
     window[cb] = function(res) {
         if (res.status === "ok") {
-            card.style.transition = "all 0.5s ease";
-            card.style.transform = "scale(0.9)";
-            card.style.opacity = "0";
-            setTimeout(() => card.remove(), 500);
+            card.remove();
         } else {
             card.style.opacity = "1";
             card.style.pointerEvents = "all";
-            alert("Proceso finalizado.");
+            alert("Proceso completado.");
         }
         delete window[cb];
     };
 
-    const s = document.createElement('script');
-    // Sacamos el email de la función onclick del botón "Ver" que ya está en la tarjeta
-    const email = card.querySelector('.btn-ver').getAttribute('onclick').match(/'([^']+)'/)[1];
-    
     let url = `${API_URL}?action=${accion}&id=${id}&callback=${cb}`;
     if (borrarTambien) url += `&extra=delete&email=${encodeURIComponent(email)}`;
     
+    const s = document.createElement('script');
     s.src = url;
     document.body.appendChild(s);
 }
-
     </script>
 </body>
 </html>
