@@ -108,34 +108,30 @@ btn.onclick = function() {
 function pedirLista() {
     if (status) status.innerText = "Conectando con Google...";
     
-    // Creamos un nombre de función único
     const cbName = "cb_" + Date.now();
 
-    // Definimos la función que recibirá los datos
     window[cbName] = function(data) {
         if (data.status === "ok") {
             renderizarTarjetas(data);
         } else {
             if (status) status.innerText = "Error: " + data.error;
         }
-        // Limpieza de memoria
         delete window[cbName];
         document.getElementById(cbName)?.remove();
     };
 
     const script = document.createElement('script');
     script.id = cbName;
-    // t=Date.now() evita que el navegador guarde errores en caché
+    // La URL debe ser exacta y terminar en /exec
     script.src = `${API_URL}?action=list&callback=${cbName}&t=${Date.now()}`;
     
     script.onerror = () => {
-        if (status) status.innerText = "Error crítico: No se pudo cargar el script de Google.";
-        console.error("Fallo de red al conectar con:", API_URL);
+        if (status) status.innerText = "Error crítico de red. Revisa permisos del script.";
+        console.error("URL rechazada:", API_URL);
     };
 
     document.body.appendChild(script);
 }
-
 // --- 3. RENDERIZADO ---
 function renderizarTarjetas(data) {
     userMail.innerText = "Cuenta: " + data.email;
