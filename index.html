@@ -95,20 +95,35 @@ btn.onclick = function() {
  * Solicita la lista al google app usando JSONP con manejo de errores.
  */
 function pedirLista() {
+    console.log("Iniciando petición a:", API_URL);
     if (status) status.innerText = "Conectando con Google...";
-    
-    // 1. Nombre único para el callback
-    const cbName = "cb_" + Date.now();
-    
-    // 2. Temporizador de seguridad (Timeout)
-    const timeout = setTimeout(() => {
-        if (window[cbName]) {
-            if (status) status.innerText = "Error: El servidor de Google no responde.";
-            delete window[cbName];
-            document.getElementById(cbName)?.remove();
-        }
-    }, 12000); // 12 segundos de espera
 
+    const cbName = "cb_" + Date.now();
+
+    window[cbName] = function(data) {
+        console.log("Datos recibidos:", data);
+        if (data.status === "ok") {
+            renderizarTarjetas(data.lista);
+        } else {
+            if (status) status.innerText = "Error: " + data.error;
+        }
+        delete window[cbName];
+        document.getElementById(cbName)?.remove();
+    };
+
+    const script = document.createElement('script');
+    script.id = cbName;
+    // Añadimos un parámetro random para evitar el caché del navegador
+    script.src = `${API_URL}?action=list&callback=${cbName}&t=${Date.now()}`;
+    
+    script.onerror = (e) => {
+        console.error("Fallo al cargar el script. Revisa la URL y permisos.");
+        if (status) status.innerText = "Error de red: No se pudo conectar con el script.";
+    };
+
+    document.body.appendChild(script);
+}
+        
     // 3. Definición de la respuesta exitosa
     window[cbName] = function(data) {
         clearTimeout(timeout); // Cancelamos el temporizador
@@ -351,6 +366,65 @@ function mostrarInterfazBaja(id, email, fecha, link)
             </div>
         </div>`;
     document.body.appendChild(modal);
+}
+
+        // URL de tu google app (la que proporcionaste anteriormente)
+const API_URL = "https://script.google.com/macros/s/AKfycbwW9vmPpd5Wg8PWFmISCL-IBEzDoIeFTT-iLaO8SOTuFOGS9xowj-tmVLyW5UMZ8qK_Yg/exec";
+
+/**
+ * Función genérica para realizar peticiones JSONP al servidor.
+ */
+function llamarGoogle(parametros, callbackProcesador) {
+    const cbName = "cb_" + Date.now();
+    
+    window[cbName] = function(data) {
+        callbackProcesador(data);
+        delete window[cbName];
+        document.getElementById(cbName)?.remove();
+    };
+
+    const script = document.createElement('script');
+    script.id = cbName;
+    // Construimos la URL con los parámetros y el callback
+    let url = `${API_URL}?callback=${cbName}`;
+    for (let clave in parametros) {
+        url += `&${clave}=${encodeURIComponent(parametros[clave])}`;
+    }
+    script.src = url;
+    document.body.appendChild(script);
+}
+
+/**
+ * Lógica para el botón "DAR DE BAJA"
+ */
+function ejecutarBaja(id, email) {
+    console.log("Buscando link de baja para:", email);
+    
+    llamarGoogle({ action: 'getUnsubscribeData', email: email }, function(res) {
+        if (res.status === 'ok') {
+            // Aquí llamaríamos a la interfaz de modal que definimos antes
+            mostrarInterfazBaja(id, email, res.fecha, res.link);
+        } else {
+            alert("Error al obtener datos: " + res.error);
+        }
+    });
+}
+
+/**
+ * Lógica para el botón "BORRAR TODO"
+ */
+function ejecutarBorradoMasivo(id, email) {
+    if (!confirm(`¿Seguro que quieres borrar todos los correos de ${email}?`)) return;
+
+    llamarGoogle({ action: 'delete', email: email }, function(res) {
+        if (res.status === 'ok') {
+            alert("Correos enviados a la papelera con éxito.");
+            // Opcional: ocultar la tarjeta del remitente
+            document.getElementById('card-' + id).style.display = 'none';
+        } else {
+            alert("Error al borrar: " + res.error);
+        }
+    });
 }
 
     </script>
